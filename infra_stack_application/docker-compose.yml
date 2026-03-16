@@ -2,12 +2,11 @@ name: infra-stack
 
 services:
   traefik:
-    image: traefik:v3.3
+    image: traefik:latest
     container_name: infra-traefik
     restart: unless-stopped
     command:
       - --api.dashboard=true
-      - --api.insecure=true
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --entrypoints.web.address=:80
@@ -16,14 +15,13 @@ services:
       - --accesslog=true
     ports:
       - "80:80"
-      - "8080:8080"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - infra_net
     labels:
       - traefik.enable=true
-      - traefik.http.routers.traefik.rule=Host(`traefik.local`)
+      - traefik.http.routers.traefik.rule=Host(`traefik.localhost`)
       - traefik.http.routers.traefik.entrypoints=web
       - traefik.http.routers.traefik.service=api@internal
 
@@ -72,9 +70,6 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-    ports:
-      - "9000:9000"
-      - "9001:9001"
     volumes:
       - /Users/patrickreuver/_workspace/04_docker/infra-stack/minio:/data
     networks:
@@ -86,9 +81,14 @@ services:
       retries: 5
     labels:
       - traefik.enable=true
-      - traefik.http.routers.minio.rule=Host(`minio.local`)
+      - traefik.http.routers.minio.rule=Host(`minio.localhost`)
       - traefik.http.routers.minio.entrypoints=web
+      - traefik.http.routers.minio.service=minio
       - traefik.http.services.minio.loadbalancer.server.port=9001
+      - traefik.http.routers.minio-s3.rule=Host(`s3.localhost`)
+      - traefik.http.routers.minio-s3.entrypoints=web
+      - traefik.http.routers.minio-s3.service=minio-s3
+      - traefik.http.services.minio-s3.loadbalancer.server.port=9000
 
 #  prometheus:
 #    image: prom/prometheus:latest
