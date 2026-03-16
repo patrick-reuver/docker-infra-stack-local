@@ -38,7 +38,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - /Users/patrickreuver/_docker-bind-mounts-volumes/infra-stack/postgres:/var/lib/postgresql/data
     networks:
       - infra_net
     healthcheck:
@@ -55,7 +55,7 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      - redis_data:/data
+      - /Users/patrickreuver/_docker-bind-mounts-volumes/infra-stack/redis:/data
     networks:
       - infra_net
     healthcheck:
@@ -76,7 +76,7 @@ services:
       - "9000:9000"
       - "9001:9001"
     volumes:
-      - minio_data:/data
+      - /Users/patrickreuver/_docker-bind-mounts-volumes/infra-stack/minio:/data
     networks:
       - infra_net
     healthcheck:
@@ -102,7 +102,7 @@ services:
 #      - "9090:9090"
 #    volumes:
 #      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-#      - prometheus_data:/prometheus
+#      - /Users/patrickreuver/_docker-bind-mounts-volumes/infra-stack/prometheus:/prometheus
 #    networks:
 #      - infra_net
 #    labels:
@@ -120,7 +120,7 @@ services:
 #      - "3100:3100"
 #    volumes:
 #      - ./loki/loki-config.yml:/etc/loki/config.yml:ro
-#      - loki_data:/loki
+#      - /Users/patrickreuver/_docker-bind-mounts-volumes/infra-stack/loki:/loki
 #    networks:
 #      - infra_net
 
@@ -150,7 +150,7 @@ services:
 #    ports:
 #      - "3000:3000"
 #    volumes:
-#      - grafana_data:/var/lib/grafana
+#      - /Users/patrickreuver/_docker-bind-mounts-volumes/infra-stack/grafana:/var/lib/grafana
 #    networks:
 #      - infra_net
 #    depends_on:
@@ -166,10 +166,4 @@ networks:
   infra_net:
     external: true
 
-volumes:
-  postgres_data:
-  redis_data:
-  minio_data:
-  prometheus_data:
-  loki_data:
-  grafana_data:
+# volumes section removed in favor of bind mounts
