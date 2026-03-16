@@ -4,19 +4,19 @@ To align with the centralized storage strategy, the infrastructure stack has bee
 
 ## Action Taken
 
-Modified `infra_stack_application/docker-compose.yml` to map service data to the host directory `/Users/patrickreuver/_docker-bind-mounts-volumes/infra-stack/`.
+Modified `infra_stack_application/docker-compose.yml` to map service data to the host directory `/Users/patrickreuver/_workspace/04_docker/infra-stack/`.
 
 ## Volume Mapping Detail
 
-- **Postgres**: `/Users/patrickreuver/_docker-bind-mounts-volumes/infra-stack/postgres`
-- **Redis**: `/Users/patrickreuver/_docker-bind-mounts-volumes/infra-stack/redis`
-- **MinIO**: `/Users/patrickreuver/_docker-bind-mounts-volumes/infra-stack/minio`
+- **Postgres**: `/Users/patrickreuver/_workspace/04_docker/infra-stack/postgres`
+- **Redis**: `/Users/patrickreuver/_workspace/04_docker/infra-stack/redis`
+- **MinIO**: `/Users/patrickreuver/_workspace/04_docker/infra-stack/minio`
 - **Monitoring (Loki, Prometheus, Grafana)**: Corresponding subdirectories in the same base path.
 
 ## Commands Executed
 
 ```bash
-mkdir -p /Users/patrickreuver/_docker-bind-mounts-volumes/infra-stack/{postgres,redis,minio,prometheus,loki,grafana}
+mkdir -p /Users/patrickreuver/_workspace/04_docker/infra-stack/{postgres,redis,minio,prometheus,loki,grafana}
 ```
 
 ## Benefits
