@@ -29,8 +29,8 @@ docker compose -f infra_stack_application/docker-compose.yml ps
 ## Validation
 
 ```bash
-curl -sSf http://localhost:8080/ping
-curl -sSf http://localhost:9000/minio/health/live
+curl -sSf -H "Host: traefik.localhost" http://localhost/ping
+curl -sSf -H "Host: s3.localhost" http://localhost/minio/health/live
 docker exec infra-postgres pg_isready -U postgres -d postgres
 ```
 
@@ -44,8 +44,13 @@ Observed status after startup:
 ## Current Runtime Ports
 
 - `80` -> Traefik web entrypoint
-- `8080` -> Traefik dashboard/API
 - `5432` -> Postgres
 - `6379` -> Redis
-- `9000` -> MinIO S3 API
-- `9001` -> MinIO Console
+
+## Note (current routing model)
+
+After introducing host-based routing through Traefik, direct host ports for MinIO and Traefik API are no longer required.
+
+- MinIO Console: `http://minio.localhost`
+- MinIO S3 API: `http://s3.localhost`
+- Traefik dashboard: `http://traefik.localhost`

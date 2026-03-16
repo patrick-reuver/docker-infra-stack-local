@@ -17,8 +17,8 @@ Monitoring services remain intentionally disabled in Compose.
 
 ```bash
 docker compose -f infra_stack_application/docker-compose.yml ps
-curl -sSf http://localhost:8080/ping
-curl -sSf http://localhost:9000/minio/health/live
+curl -sSf -H "Host: traefik.localhost" http://localhost/ping
+curl -sSf -H "Host: s3.localhost" http://localhost/minio/health/live
 docker exec infra-redis redis-cli -a "$REDIS_PASSWORD" ping
 docker exec infra-postgres psql -U postgres -d postgres -c "SELECT datname FROM pg_database WHERE datname IN ('postgres','twenty_db');"
 ```
