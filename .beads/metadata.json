@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "docker_infra_stack",
+  "project_id": "523bab53-da1a-4d24-8e11-4f854bfe1820"
+}
