@@ -1,6 +1,6 @@
 # Step 17: Postgres pgvector Cutover and Collation Follow-up
 
-This run documents the live cutover of the shared `infra-postgres` service from `postgres:16` to `pgvector/pgvector:pg16`, the validation steps that were executed afterwards, and the follow-up work that remains because the new container image uses a different collation library version.
+This run documents the live cutover of the shared `infra-postgres` service from `postgres:16` to `pgvector/pgvector:pg16`, the validation steps that were executed afterwards, and the now-validated remediation workflow for the collation drift introduced by the new container image.
 
 ## What Was Changed
 
@@ -84,16 +84,103 @@ As long as no remediation has been run yet:
 - treat text sort order, text comparisons, and indexes on text-like columns as the main risk area
 - prefer planned follow-up work over ad-hoc changes in the live container
 
-## Recommended Follow-up Direction
+## Validated Remediation Direction
 
-The remaining work is intentionally tracked separately in Beads so the stack can keep running while follow-up is planned safely.
+The validated path is to stay on `pgvector/pgvector:pg16` and repair the databases rather than trying to find a pgvector image with the old locale baseline.
 
-The likely remediation paths are:
+The repository now contains a dedicated isolation toolkit for this maintenance:
 
-1. move to a pgvector image that matches the old collation runtime closely enough to eliminate the mismatch
-2. stay on the current pgvector image and perform a planned database remediation:
-   - identify affected indexes and objects per database
-   - rebuild required objects
-   - only then run `ALTER DATABASE ... REFRESH COLLATION VERSION`
+- `infra_stack_application/docker-compose.collation-remediation.yml`
+- `scripts/postgres-clone-pgdata.sh`
+- `scripts/postgres-collation-inventory.sh`
+- `scripts/postgres-collation-remediate.sh`
+- `scripts/postgres-collation-validate.sh`
 
-Do not choose between these two paths ad hoc during normal app operation; treat it as planned database maintenance.
+## Isolated Validation Run
+
+The remediation workflow was executed first against a cloned copy of the live PGDATA directory in `/private/tmp/infra-postgres-collation-remediation`, not against the live bind mount.
+
+Commands used:
+
+```bash
+scripts/postgres-clone-pgdata.sh \
+  /Users/patrickreuver/_workspace/04_docker/infra-stack/postgres \
+  /private/tmp/infra-postgres-collation-remediation
+
+PGDATA_CLONE_PATH=/private/tmp/infra-postgres-collation-remediation \
+  docker compose -f infra_stack_application/docker-compose.collation-remediation.yml up -d
+
+scripts/postgres-collation-inventory.sh infra-postgres-collation-test
+scripts/postgres-collation-remediate.sh infra-postgres-collation-test
+scripts/postgres-collation-validate.sh infra-postgres-collation-test
+```
+
+Before remediation, the isolated copy reproduced the same mismatch on all relevant databases:
+
+- `audio2knowledge`
+- `hoppscotch_db`
+- `infisical_db`
+- `omi_db`
+- `postgres`
+- `second_brain`
+- `template1`
+- `twenty_db`
+
+Inventory highlights from the isolated run:
+
+- `infisical_db`: `5531` collatable columns, `1369` collatable indexes
+- `hoppscotch_db`: `95` collatable columns, `48` collatable indexes
+- `twenty_db`: `356` collatable columns, `32` collatable indexes
+- `omi_db`: `27` collatable columns, `12` collatable indexes
+- `audio2knowledge`: `22` collatable columns, `1` collatable index
+- `postgres`: `0` collatable columns, `0` collatable indexes
+- `second_brain`: `1` collatable column, `0` collatable indexes
+- `template1`: `0` collatable columns, `0` collatable indexes
+
+## Verified Remediation Sequence
+
+The successful isolated run used this sequence for every database except `template0`:
+
+1. connect to the target database
+2. run `REINDEX DATABASE "<db>"`
+3. connect through `postgres`
+4. run `ALTER DATABASE "<db>" REFRESH COLLATION VERSION`
+
+`template1` was included intentionally so future databases do not inherit the stale collation version.
+
+## Verified Outcome
+
+After remediation on the isolated copy:
+
+- every affected database reported `datcollversion = 2.36`
+- `pg_database_collation_actual_version(...)` also reported `2.36`
+- `psql` connections no longer emitted collation mismatch warnings
+
+Validated final state:
+
+```text
+audio2knowledge  2.36  2.36
+hoppscotch_db    2.36  2.36
+infisical_db     2.36  2.36
+omi_db           2.36  2.36
+postgres         2.36  2.36
+second_brain     2.36  2.36
+template1        2.36  2.36
+twenty_db        2.36  2.36
+```
+
+Additional smoke checks against the remediated isolated container succeeded for:
+
+- `infisical_db` index metadata queries
+- `twenty_db` table metadata queries
+
+## Live Run Guidance
+
+When applying the same fix to the live shared Postgres volume:
+
+1. stop or isolate application writers as needed for the maintenance window
+2. create a fresh backup or filesystem snapshot of the live PGDATA directory
+3. run the same inventory, remediation, and validation sequence against the live `infra-postgres`
+4. only return consumers to normal write traffic after the validation script completes without warnings
+
+This should be treated as planned maintenance, but the isolated validation confirms that a database-wide reindex followed by collation version refresh is the correct repair path for the current shared stack.

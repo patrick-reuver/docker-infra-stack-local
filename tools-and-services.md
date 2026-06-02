@@ -22,10 +22,13 @@ The entries below explicitly distinguish between:
 - `docker compose`
   - status: actively used
   - purpose: defines and starts the shared infra stack from `infra_stack_application/docker-compose.yml`
-  - note: also used for service-specific compose projects such as `infisical/docker-compose.yml`
+  - note: also used for service-specific compose projects such as `infisical/docker-compose.yml` and the isolated Postgres collation remediation compose file
 - `gitnexus`
   - status: initialized in this repository
   - purpose: supports code understanding, impact analysis, and change detection for safe edits and reviews
+- `postgres collation remediation toolkit`
+  - status: active operational helper set in this repository
+  - purpose: clones live PGDATA into an isolated test location, inventories collatable objects, runs database-wide reindex plus collation refresh, and validates the result before the same steps are used against the live shared Postgres volume
 - `beads`
   - status: initialized in this repository
   - purpose: tracks and manages open tasks directly in the repo so work can be captured, claimed, and completed through `bd`
@@ -55,6 +58,7 @@ The entries below explicitly distinguish between:
   - status: active
   - purpose: central relational database instance with separate application databases on a shared server
   - note: the shared Postgres 16 runtime now includes the `pgvector` extension so it remains available across container rebuilds and recreates
+  - note: collation maintenance is now handled through an isolated-clone remediation workflow rather than ad-hoc operations against the live bind mount
 - `redis`
   - status: active
   - purpose: shared cache and broker service for application stacks that connect to `infra_net`
