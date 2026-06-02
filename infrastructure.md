@@ -11,6 +11,11 @@ The stack is defined in `infra_stack_application/docker-compose.yml` and current
 - `redis` as the shared runtime cache / broker
 - `minio` as the shared S3-compatible object storage
 
+The repository also contains one additional shared service compose project:
+
+- `infisical` as the shared secret management service for local tools and agents, defined in `infisical/docker-compose.yml`
+- `infisical-mcp` as the dedicated MCP bridge for Codex and other MCP clients, defined in `infisical-mcp/docker-compose.yml`
+
 The compose file also contains optional observability services that are currently present but commented out:
 
 - `prometheus`
@@ -25,6 +30,7 @@ The compose file also contains optional observability services that are currentl
 - access to the central Postgres instance
 - access to shared Redis
 - access to shared MinIO / S3
+- access to shared secret management
 - exposure through shared Traefik routing
 
 Within Docker, connected application containers should use internal DNS names:
@@ -32,6 +38,8 @@ Within Docker, connected application containers should use internal DNS names:
 - `postgres:5432`
 - `redis:6379`
 - `minio:9000`
+- `infisical:8080`
+- `infisical-mcp` for the dedicated MCP bridge container
 
 ## Routing via Traefik
 
@@ -40,6 +48,7 @@ Traefik is the shared HTTP entrypoint and currently routes these infra endpoints
 - `http://traefik.localhost` -> Traefik dashboard
 - `http://minio.localhost` -> MinIO console
 - `http://s3.localhost` -> MinIO S3 API
+- `http://infisical.localhost` -> Infisical UI and API
 
 Consumer routes that are currently live or configured in the local workspace:
 
@@ -67,12 +76,21 @@ The shared runtime model is one writable runtime user with separate databases pe
 
 - default admin database: `POSTGRES_DEFAULT_DB=postgres`
 - Twenty CRM database mapping: `TWENTY_POSTGRES_DB=twenty_db`
+- Infisical database mapping: `INFISICAL_POSTGRES_DB=infisical_db`
+
+The central Postgres container now uses a Postgres 16 image with `pgvector` included. This makes the extension reproducibly available after container rebuilds or recreates without changing ports, credentials, or the shared data volume layout.
+
+`pgvector` availability does not auto-enable it inside every database. Applications or operators must still activate it per database with `CREATE EXTENSION vector;` where vector storage and similarity search are needed.
+
+The first live cutover to the pgvector-enabled image kept all databases reachable, but it also exposed a collation-version drift between the historical data directory and the current container runtime. The stack is operational, but this remains a tracked follow-up item and should be treated as planned maintenance rather than an ad-hoc hotfix.
 
 Twenty CRM is the documented consumer for `twenty_db`. Existing runbooks also describe provisioning and cutover for this database.
 
 ### Redis
 
 Redis is provided as a shared runtime service on `redis:6379`. Connected applications reuse the same central instance instead of bringing their own Redis container unless there is a specific reason to isolate it.
+
+Infisical also uses the shared Redis instance for its runtime cache and background coordination.
 
 ### MinIO
 
@@ -84,6 +102,61 @@ MinIO is the shared S3-compatible object storage service. The env template separ
 Per-app storage should be separated by bucket. The current template already includes the Twenty CRM bucket mapping:
 
 - `TWENTY_MINIO_BUCKET=twenty`
+
+## Shared Secret Management
+
+### Infisical
+
+Infisical is the shared secret management layer for this local environment. Its purpose is to give tools, agents, and application stacks a central place to retrieve API credentials and other secrets without hard-exposing them in repository files or ad-hoc local environment files.
+
+The local deployment model is intentionally small and reuses the existing infra primitives:
+
+- compose file: `infisical/docker-compose.yml`
+- route: `http://infisical.localhost`
+- network: `infra_net`
+- dependencies: shared `postgres` and shared `redis`
+- dedicated database: `infisical_db`
+
+The `infisical/` folder also contains an idempotent one-shot database initialization step so the dedicated database can be created reproducibly against the shared Postgres instance by the existing runtime DB user.
+
+The initial rollout covers the Infisical application only. The later MCP integration should use the official Infisical MCP server as a separate process or container pointed at the local Infisical host URL.
+
+### Infisical MCP Bridge
+
+The Infisical MCP integration for Codex is designed as a separate Docker service rather than being embedded into the main Infisical container. This keeps the trust boundary explicit: the application service continues to host the secrets platform, while the MCP bridge exposes AI-facing tools through a dedicated runtime.
+
+- compose file: `infisical-mcp/docker-compose.yml`
+- network: `infra_net`
+- runtime target: `http://infisical:8080` from inside Docker
+- client target: Codex or another MCP client connects to the dedicated MCP bridge process
+- authentication model: Infisical Organization Machine Identity via Universal Auth
+
+The local Codex desktop setup is now configured as one of these MCP clients. Codex reaches the self-hosted Infisical instance through the dedicated `infisical-mcp` bridge and authenticates there with a machine identity rather than with an interactive user account.
+
+The preferred operating model is now a two-identity setup:
+
+- `codex-readonly` for day-to-day discovery and read operations
+- `codex-admin` for deliberate write operations such as project creation and secret changes
+
+Operationally, the persistent base layer is the shared `infisical-mcp` service definition. The readonly and admin Codex profiles are expected to run on demand as short-lived `docker compose run --rm ...` MCP processes rather than as always-on dedicated containers.
+
+Both are Organization Machine Identities. The admin identity needs organization-level permission to create projects and project-level membership in any project where it should create or edit secrets, folders, or environments.
+
+The preferred network path is internal Docker DNS (`infisical:8080`) instead of the Traefik hostname because the MCP container lives on the same shared network and does not need to hairpin through the external HTTP route.
+
+The intended rollout is phased:
+
+- Phase 1: read-only or limited pilot validation for `list-projects`, `list-secrets`, and `get-secret`
+- Phase 2: explicit write enablement for operations such as secret CRUD, environment creation, folder creation, and project creation
+
+Because the official `@infisical/mcp` server supports write operations, any production-like enablement of this bridge must treat machine identity scope and role assignment as part of the infrastructure change itself.
+
+For write-capable operation, role assignment has two layers:
+
+- organization-level permission for `project:create` to allow `create-project`
+- project-level membership with write-capable project permissions for `secrets`, `secret-folders`, and `environments`
+
+During local validation, `list-projects` also proved to be stricter than some tool descriptions suggest: `type="all"` did not work against the local self-hosted Infisical instance. Use a concrete project type instead, for example `secret-manager`, `cert-manager`, `kms`, `ssh`, `secret-scanning`, `pam`, or `ai`.
 
 ## Consumers of This Stack
 
@@ -132,6 +205,7 @@ This document is the overview, not the step-by-step operating manual. For detail
 - Traefik routing: `14-traefik-host-routing.md`
 - app onboarding: `15-app-onboarding-runbook.md`
 - Postgres provisioning: `08-postgres-provisioning.md`
+- Postgres pgvector cutover and collation follow-up: `17-postgres-pgvector-cutover-and-collation-followup.md`
 - Twenty CRM shared infra cutover: `16-twenty-crm-shared-infra-cutover.md`
 
 When infrastructure changes, update this overview together with the underlying runbooks where necessary.

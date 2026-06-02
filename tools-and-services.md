@@ -22,12 +22,19 @@ The entries below explicitly distinguish between:
 - `docker compose`
   - status: actively used
   - purpose: defines and starts the shared infra stack from `infra_stack_application/docker-compose.yml`
+  - note: also used for service-specific compose projects such as `infisical/docker-compose.yml`
 - `gitnexus`
   - status: initialized in this repository
   - purpose: supports code understanding, impact analysis, and change detection for safe edits and reviews
 - `beads`
   - status: initialized in this repository
   - purpose: tracks and manages open tasks directly in the repo so work can be captured, claimed, and completed through `bd`
+- `infisical` ecosystem
+  - status: active local service plus planned MCP bridge rollout
+  - purpose: provides the secrets control plane for local tools and agents and the future authenticated MCP path for Codex
+- `@infisical/mcp`
+  - status: active for local Codex access through the dedicated MCP bridge
+  - purpose: exposes Infisical project and secret operations to Codex or other MCP-capable clients through a dedicated MCP server authenticated with separate readonly and admin Organization Machine Identities
 
 ### Initialized, but With Setup Caveats
 
@@ -47,12 +54,21 @@ The entries below explicitly distinguish between:
 - `postgres`
   - status: active
   - purpose: central relational database instance with separate application databases on a shared server
+  - note: the shared Postgres 16 runtime now includes the `pgvector` extension so it remains available across container rebuilds and recreates
 - `redis`
   - status: active
   - purpose: shared cache and broker service for application stacks that connect to `infra_net`
 - `minio`
   - status: active
   - purpose: shared S3-compatible object storage for application buckets and storage integrations
+- `infisical`
+  - status: configured as a dedicated local compose project
+  - purpose: shared secret management service for local tools, agents, and application stacks that need API credentials or other secrets without hard-exposing them in repository files
+  - dependencies: shared `postgres`, shared `redis`, shared `traefik`, external `infra_net`
+- `infisical-mcp`
+  - status: active as a separate local compose project
+  - purpose: dedicated MCP bridge between AI clients and the self-hosted Infisical instance, with readonly/admin MCP profiles typically executed on demand as short-lived containers
+  - dependencies: external `infra_net`, local Infisical host, Organization Machine Identity credentials
 
 ### Present in Compose but Currently Disabled
 
@@ -73,4 +89,7 @@ The entries below explicitly distinguish between:
 
 - For architecture, routing, networks, and connected consumer repositories, use `infrastructure.md`.
 - For operating procedures and onboarding details, use the runbooks in `docs/documentation`.
+- The repository now prepares the official `@infisical/mcp` server as a separate service under `infisical-mcp/`. The preferred runtime target from the container is `http://infisical:8080` across `infra_net`; desktop MCP clients can still reference the local user-facing route `http://infisical.localhost` when needed outside Docker.
+- Codex is now locally registered as an MCP client for this bridge and accesses Infisical through the dedicated machine-identity-backed MCP path rather than direct user login.
+- The preferred security model is a phased rollout with two identities: a default readonly profile and a separate admin profile for write-capable tools such as secret CRUD and project creation.
 - If tooling, service inventory, or service activation state changes, update this file together with the relevant operational documentation.

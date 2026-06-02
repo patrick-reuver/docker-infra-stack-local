@@ -53,3 +53,9 @@ Validation result:
 
 - Credentials were stored locally in `infra_stack_application/.env` for onboarding use.
 - No generated secret was added to version-controlled documentation.
+
+## Later Runtime Change
+
+The shared Postgres runtime was later moved from `postgres:16` to `pgvector/pgvector:pg16` so `pgvector` is available reproducibly in the central database service.
+
+That cutover, its validation steps, and the resulting collation follow-up are documented in `17-postgres-pgvector-cutover-and-collation-followup.md`.
