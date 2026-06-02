@@ -184,3 +184,17 @@ When applying the same fix to the live shared Postgres volume:
 4. only return consumers to normal write traffic after the validation script completes without warnings
 
 This should be treated as planned maintenance, but the isolated validation confirms that a database-wide reindex followed by collation version refresh is the correct repair path for the current shared stack.
+
+## Live Execution Result
+
+After the isolated test environment was re-verified as healthy, warning-free, and `pgvector`-capable, the same remediation sequence was executed successfully against the live `infra-postgres` instance.
+
+Live post-checks confirmed:
+
+- all remediated databases now report `2.36` as both `datcollversion` and `pg_database_collation_actual_version(...)`
+- `scripts/postgres-collation-validate.sh infra-postgres` completed without mismatch warnings
+- `pgvector` is available on the live instance and a simple vector distance operation succeeded after `CREATE EXTENSION IF NOT EXISTS vector`
+- no new `infra-postgres` log output appeared after the post-remediation checks
+- the known consumers `twenty-server-1`, `infra-infisical`, `omi-api-local`, and `infra-hoppscotch` remained running after the maintenance
+
+This follow-up item is therefore complete: the shared databases now run without the collation mismatch warning on the live stack as well as in the isolated validation environment.

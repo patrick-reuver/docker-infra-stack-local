@@ -82,7 +82,7 @@ The central Postgres container now uses a Postgres 16 image with `pgvector` incl
 
 `pgvector` availability does not auto-enable it inside every database. Applications or operators must still activate it per database with `CREATE EXTENSION vector;` where vector storage and similarity search are needed.
 
-The first live cutover to the pgvector-enabled image kept all databases reachable, but it also exposed a collation-version drift between the historical data directory and the current container runtime. That drift is now remediated through a validated maintenance workflow that is first exercised against an isolated copy of PGDATA before being applied to the live shared database volume.
+The first live cutover to the pgvector-enabled image kept all databases reachable, but it also exposed a collation-version drift between the historical data directory and the current container runtime. That drift has now been remediated in the live shared database volume through a maintenance workflow that was first exercised against an isolated copy of PGDATA.
 
 The validated remediation path is:
 
@@ -92,6 +92,8 @@ The validated remediation path is:
 4. run `REINDEX DATABASE` for every database except `template0`
 5. run `ALTER DATABASE ... REFRESH COLLATION VERSION` for every remediated database, including `template1`
 6. verify that `datcollversion` matches `pg_database_collation_actual_version(...)` everywhere and that no collation mismatch warnings remain
+
+The same sequence has now been applied successfully to the live `infra-postgres` instance. The shared databases `audio2knowledge`, `hoppscotch_db`, `infisical_db`, `omi_db`, `postgres`, `second_brain`, `template1`, and `twenty_db` now report matching collation versions again, and a live `pgvector` smoke test succeeds without reintroducing warnings.
 
 The repository now contains the supporting toolkit for this flow:
 
