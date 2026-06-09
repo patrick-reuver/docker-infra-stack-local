@@ -1,0 +1,40 @@
+name: infra-infisical-mcp
+
+x-infisical-mcp-base: &infisical-mcp-base
+  image: ${INFISICAL_MCP_IMAGE:-node:22-alpine}
+  restart: unless-stopped
+  command:
+    - node
+    - /opt/infisical-mcp/patch-descriptors.mjs
+  environment:
+    INFISICAL_AUTH_METHOD: ${INFISICAL_AUTH_METHOD}
+    INFISICAL_HOST_URL: ${INFISICAL_HOST_URL}
+    INFISICAL_UNIVERSAL_AUTH_CLIENT_ID: ${INFISICAL_UNIVERSAL_AUTH_CLIENT_ID}
+    INFISICAL_UNIVERSAL_AUTH_CLIENT_SECRET: ${INFISICAL_UNIVERSAL_AUTH_CLIENT_SECRET}
+  volumes:
+    - ./patch-descriptors.mjs:/opt/infisical-mcp/patch-descriptors.mjs:ro
+  networks:
+    - infra_net
+  stdin_open: true
+  tty: true
+
+services:
+  infisical-mcp:
+    <<: *infisical-mcp-base
+    container_name: infra-infisical-mcp
+
+  infisical-mcp-readonly:
+    <<: *infisical-mcp-base
+    container_name: infra-infisical-mcp-readonly
+    profiles:
+      - readonly
+
+  infisical-mcp-admin:
+    <<: *infisical-mcp-base
+    container_name: infra-infisical-mcp-admin
+    profiles:
+      - admin
+
+networks:
+  infra_net:
+    external: true

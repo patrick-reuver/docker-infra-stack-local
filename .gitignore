@@ -1,1 +1,16 @@
 .env
+infisical/.env
+infisical-mcp/.env
+infisical-mcp/.env.readonly
+infisical-mcp/.env.admin
+AGENTS.md
+CLAUDE.md
+docs
+.gitnexus
+.claude
+_workspace
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key

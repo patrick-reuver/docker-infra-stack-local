@@ -11,10 +11,12 @@ The stack is defined in `infra_stack_application/docker-compose.yml` and current
 - `redis` as the shared runtime cache / broker
 - `minio` as the shared S3-compatible object storage
 
-The repository also contains one additional shared service compose project:
+The repository also contains additional shared service compose projects:
 
 - `infisical` as the shared secret management service for local tools and agents, defined in `infisical/docker-compose.yml`
 - `infisical-mcp` as the dedicated MCP bridge for Codex and other MCP clients, defined in `infisical-mcp/docker-compose.yml`
+- `presidio` as the PII detection and anonymization service, defined in `presidio/docker-compose.yml`
+- `langfuse` as the LLM observability and tracing platform, defined in `langfuse/docker-compose.yml`
 
 The compose file also contains optional observability services that are currently present but commented out:
 
@@ -49,6 +51,9 @@ Traefik is the shared HTTP entrypoint and currently routes these infra endpoints
 - `http://minio.localhost` -> MinIO console
 - `http://s3.localhost` -> MinIO S3 API
 - `http://infisical.localhost` -> Infisical UI and API
+- `http://presidio.localhost` -> Presidio Analyzer API (PII detection)
+- `http://presidio-anonymizer.localhost` -> Presidio Anonymizer API (anonymization/de-anonymization)
+- `http://langfuse.localhost` -> Langfuse UI and API (LLM observability)
 
 Consumer routes that are currently live or configured in the local workspace:
 
@@ -169,6 +174,73 @@ The intended rollout is phased:
 - Phase 2: explicit write enablement for operations such as secret CRUD, environment creation, folder creation, and project creation
 
 Because the official `@infisical/mcp` server supports write operations, any production-like enablement of this bridge must treat machine identity scope and role assignment as part of the infrastructure change itself.
+
+## PII Detection & Anonymization (Presidio)
+
+Presidio provides centralized PII detection and anonymization for all consumers in the infrastructure stack. It runs as two services on `infra_net`:
+
+- **Analyzer** (`presidio-analyzer:3000`, routed via `presidio.localhost`) — Detects PII entities in text
+- **Anonymizer** (`presidio-anonymizer:3000`, routed via `presidio-anonymizer.localhost`) — Anonymizes and de-anonymizes text
+
+### Features
+- Built-in recognizers for PERSON, LOCATION, EMAIL, PHONE_NUMBER, CREDIT_CARD, etc.
+- Custom German recognizers: `DE_IBAN`, `DE_STEUER_ID`, `DE_POSTAL_CODE`, `DE_PHONE_NUMBER`, `DE_ADDRESS`
+- spaCy NLP models (German `de_core_news_lg`, English `en_core_web_lg`)
+- Transformers-based NER (configurable)
+- REST API with health endpoints
+- Structured JSON logging
+
+### Consumer Integration
+Consumers (LiteLLM Router, Hermes, Second Brain, etc.) should:
+1. Send text to Analyzer `/analyze` to detect PII
+2. Send text + analyzer results to Anonymizer `/anonymize` to replace PII
+3. Send LLM response to Anonymizer `/deanonymize` to restore original values
+
+### Configuration
+Secrets managed via Infisical at path `/presidio`:
+- `SPACY_MODEL` (default: `de_core_news_lg`)
+- `TRANSFORMERS_MODEL` (default: `dslim/bert-base-NER`)
+- `PRESIDIO_LOG_LEVEL` (default: `INFO`)
+- `PRESIDIO_CUSTOM_RECOGNIZERS_ENABLED` (default: `true`)
+
+### Compose File
+`presidio/docker-compose.yml`
+
+## LLM Observability (Langfuse)
+
+Langfuse provides open-source LLM observability, tracing, and analytics. It runs on `infra_net` with its own PostgreSQL and Redis dependencies.
+
+- **Web UI** (`langfuse-web:3000`, routed via `langfuse.localhost`) — Dashboard for traces, scores, datasets
+- **API** (`langfuse-web:3000`) — Ingestion and query API
+- **Database** — Dedicated PostgreSQL database `langfuse_db` on shared Postgres
+- **Cache/Queue** — Dedicated Redis database (DB 1) on shared Redis
+
+### Features
+- LLM call tracing (inputs, outputs, latency, tokens, costs)
+- User feedback collection (scores, comments)
+- Dataset management for evaluation
+- Prompt management and versioning
+- OpenTelemetry compatible
+- Self-hosted, privacy-first
+
+### Consumer Integration
+Consumers (LiteLLM Router, Hermes, etc.) integrate via:
+- Langfuse SDK (Python, TypeScript, etc.)
+- OpenTelemetry exporter
+- Direct REST API
+
+### Configuration
+Secrets managed via Infisical at path `/langfuse`:
+- `LANGFUSE_SALT` — Encryption salt (generate with `openssl rand -base64 32`)
+- `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` — API keys for projects
+- `DATABASE_URL` — PostgreSQL connection (shared Postgres)
+- `REDIS_URL` — Redis connection (shared Redis)
+- `NEXTAUTH_SECRET` — NextAuth secret (generate with `openssl rand -base64 32`)
+
+### Compose File
+`langfuse/docker-compose.yml`
+
+## Infisical MCP Bridge — Write-Capable Operation
 
 For write-capable operation, role assignment has two layers:
 
