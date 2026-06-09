@@ -1,0 +1,41 @@
+version: '3.8'
+
+name: infra-langfuse
+
+services:
+  langfuse-web:
+    image: langfuse/langfuse:latest
+    container_name: infra-langfuse-web
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        infisical run --projectId=${INFISICAL_PROJECT_ID} --env=${INFISICAL_ENV} --path=/langfuse -- \
+        /entrypoint.sh
+    environment:
+      # Infisical Machine Identity
+      - INFISICAL_PROJECT_ID=effe08c3-cb89-4f7d-8380-0e10434cdfee
+      - INFISICAL_ENV=local
+      - INFISICAL_AUTH_METHOD=universal-auth
+      - INFISICAL_HOST_URL=http://infisical:8080
+      - INFISICAL_UNIVERSAL_AUTH_CLIENT_ID=${LANGFUSE_INFISICAL_CLIENT_ID}
+      - INFISICAL_UNIVERSAL_AUTH_CLIENT_SECRET=${LANGFUSE_INFISICAL_CLIENT_SECRET}
+    networks:
+      - infra_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/public/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.langfuse.rule=Host(`langfuse.localhost`)
+      - traefik.http.routers.langfuse.entrypoints=web
+      - traefik.http.routers.langfuse.service=langfuse
+      - traefik.http.services.langfuse.loadbalancer.server.port=3000
+      - traefik.docker.network=infra_net
+
+networks:
+  infra_net:
+    external: true

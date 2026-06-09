@@ -1,0 +1,34 @@
+{
+  "mcpServers": {
+    "infisical-readonly": {
+      "command": "docker",
+      "args": [
+        "compose",
+        "--env-file",
+        "/absolute/path/to/docker-infra-stack/infisical-mcp/.env.readonly",
+        "-f",
+        "/absolute/path/to/docker-infra-stack/infisical-mcp/docker-compose.yml",
+        "--profile",
+        "readonly",
+        "run",
+        "--rm",
+        "infisical-mcp-readonly"
+      ]
+    },
+    "infisical-admin": {
+      "command": "docker",
+      "args": [
+        "compose",
+        "--env-file",
+        "/absolute/path/to/docker-infra-stack/infisical-mcp/.env.admin",
+        "-f",
+        "/absolute/path/to/docker-infra-stack/infisical-mcp/docker-compose.yml",
+        "--profile",
+        "admin",
+        "run",
+        "--rm",
+        "infisical-mcp-admin"
+      ]
+    }
+  }
+}
