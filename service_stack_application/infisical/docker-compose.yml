@@ -1,0 +1,46 @@
+name: infra-infisical
+
+services:
+  infisical-db-init:
+    image: postgres:16
+    container_name: infra-infisical-db-init
+    profiles:
+      - setup
+    restart: "no"
+    entrypoint: ["/bin/sh", "/scripts/init-db.sh"]
+    environment:
+      POSTGRES_HOST: ${DB_HOST}
+      POSTGRES_PORT: ${DB_PORT}
+      POSTGRES_DEFAULT_DB: postgres
+      POSTGRES_ADMIN_USER: ${POSTGRES_ADMIN_USER}
+      POSTGRES_ADMIN_PASSWORD: ${POSTGRES_ADMIN_PASSWORD}
+      POSTGRES_APP_USER: ${DB_USER}
+      INFISICAL_POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - ./scripts:/scripts:ro
+    networks:
+      - infra_net
+
+  infisical:
+    image: infisical/infisical:${INFISICAL_IMAGE_TAG}
+    container_name: infra-infisical
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      AUTH_SECRET: ${AUTH_SECRET}
+      SITE_URL: ${SITE_URL}
+      DB_CONNECTION_URI: postgresql://${DB_USER}:${DB_PASSWORD_URLENCODED}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}
+    networks:
+      - infra_net
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=infra_net
+      - traefik.http.routers.infisical.rule=Host(`infisical.localhost`)
+      - traefik.http.routers.infisical.entrypoints=web
+      - traefik.http.services.infisical.loadbalancer.server.port=8080
+
+networks:
+  infra_net:
+    external: true

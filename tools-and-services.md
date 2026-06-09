@@ -73,6 +73,17 @@ The entries below explicitly distinguish between:
   - status: active as a separate local compose project
   - purpose: dedicated MCP bridge between AI clients and the self-hosted Infisical instance, with readonly/admin MCP profiles typically executed on demand as short-lived containers
   - dependencies: external `infra_net`, local Infisical host, Organization Machine Identity credentials
+- `presidio`
+  - status: configured as a dedicated local compose project
+  - purpose: PII detection and anonymization service for privacy-safe LLM interactions
+  - dependencies: external `infra_net`, shared `traefik`, Infisical for secrets
+  - components: `presidio-analyzer` (detection), `presidio-anonymizer` (anonymization/de-anonymization)
+  - custom: German PII recognizers (IBAN, Steuer-ID, postal codes, phone, addresses)
+- `langfuse`
+  - status: configured as a dedicated local compose project
+  - purpose: LLM observability, tracing, and analytics platform
+  - dependencies: external `infra_net`, shared `postgres` (dedicated `langfuse_db`), shared `redis` (dedicated DB 1), shared `traefik`, Infisical for secrets
+  - components: `langfuse-web` (UI + API)
 
 ### Present in Compose but Currently Disabled
 

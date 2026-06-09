@@ -1,0 +1,40 @@
+version: '3.8'
+
+name: infra-clickhouse
+
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    container_name: infra-clickhouse
+    restart: unless-stopped
+    environment:
+      - CLICKHOUSE_DB=langfuse
+      - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
+      - CLICKHOUSE_USER=langfuse
+      - CLICKHOUSE_PASSWORD=changeme_clickhouse
+    ports:
+      - "8123:8123"  # HTTP
+      - "9000:9000"  # Native
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    networks:
+      - infra_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8123/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.clickhouse.rule=Host(`clickhouse.localhost`)
+      - traefik.http.routers.clickhouse.entrypoints=web
+      - traefik.http.services.clickhouse.loadbalancer.server.port=8123
+      - traefik.docker.network=infra_net
+
+volumes:
+  clickhouse_data:
+
+networks:
+  infra_net:
+    external: true
