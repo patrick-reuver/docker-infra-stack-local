@@ -74,8 +74,10 @@ Before completing any code modification task, verify:
 
 - Treat `infrastructure.md` in the repo root as the canonical overview of this shared infra stack.
 - Treat `tools-and-services.md` in the repo root as the canonical overview of the tools and services used in this repository and what they are used for.
+- Treat `databases.md` in the repo root as the canonical inventory of the shared Postgres databases and application schemas.
 - Any change to compose files, networks, central services, Traefik routing, exposed ports, shared credential models, or consumer onboarding is incomplete unless `infrastructure.md` is reviewed and updated in the same change.
 - Any change or extension to repository tooling, operational tooling, service usage, or service landscape is incomplete unless `tools-and-services.md` is reviewed and updated in the same change.
+- Any change that adds, removes, renames, reassigns, or materially restructures a Postgres database or application schema is incomplete unless `databases.md` is reviewed and updated in the same change.
 - If a change affects both infrastructure architecture and the tool/service inventory, both root documents must be updated together.
 
 ## Keeping the Index Fresh

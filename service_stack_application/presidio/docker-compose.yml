@@ -1,0 +1,86 @@
+version: '3.8'
+
+name: infra-presidio
+
+services:
+  presidio-analyzer:
+    image: mcr.microsoft.com/presidio-analyzer:latest
+    container_name: infra-presidio-analyzer
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        infisical run --projectId=${INFISICAL_PROJECT_ID} --env=${INFISICAL_ENV} --path=/presidio -- \
+        /entrypoint.sh
+    environment:
+      - PORT=3000
+      - LOG_LEVEL=${PRESIDIO_LOG_LEVEL:-INFO}
+      - CORS_ENABLED=true
+      - SPACY_MODEL=${SPACY_MODEL:-de_core_news_lg}
+      - TRANSFORMERS_MODEL=${TRANSFORMERS_MODEL:-dslim/bert-base-NER}
+      - CUSTOM_RECOGNIZERS_ENABLED=${PRESIDIO_CUSTOM_RECOGNIZERS_ENABLED:-true}
+      - CUSTOM_RECOGNIZERS_PATH=/app/custom_recognizers
+      # Infisical Machine Identity
+      - INFISICAL_PROJECT_ID=effe08c3-cb89-4f7d-8380-0e10434cdfee
+      - INFISICAL_ENV=local
+      - INFISICAL_AUTH_METHOD=universal-auth
+      - INFISICAL_HOST_URL=http://infisical:8080
+      - INFISICAL_UNIVERSAL_AUTH_CLIENT_ID=${PRESIDIO_INFISICAL_CLIENT_ID}
+      - INFISICAL_UNIVERSAL_AUTH_CLIENT_SECRET=${PRESIDIO_INFISICAL_CLIENT_SECRET}
+    volumes:
+      - ./custom_recognizers:/app/custom_recognizers:ro
+    networks:
+      - infra_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.presidio-analyzer.rule=Host(`presidio.localhost`) && PathPrefix(`/analyze`, `/recognizers`, `/supportedentities`, `/health`)
+      - traefik.http.routers.presidio-analyzer.entrypoints=web
+      - traefik.http.routers.presidio-analyzer.service=presidio-analyzer
+      - traefik.http.services.presidio-analyzer.loadbalancer.server.port=3000
+      - traefik.docker.network=infra_net
+
+  presidio-anonymizer:
+    image: mcr.microsoft.com/presidio-anonymizer:latest
+    container_name: infra-presidio-anonymizer
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        infisical run --projectId=${INFISICAL_PROJECT_ID} --env=${INFISICAL_ENV} --path=/presidio -- \
+        /entrypoint.sh
+    environment:
+      - PORT=3000
+      - LOG_LEVEL=${PRESIDIO_LOG_LEVEL:-INFO}
+      - CORS_ENABLED=true
+      # Infisical Machine Identity
+      - INFISICAL_PROJECT_ID=effe08c3-cb89-4f7d-8380-0e10434cdfee
+      - INFISICAL_ENV=local
+      - INFISICAL_AUTH_METHOD=universal-auth
+      - INFISICAL_HOST_URL=http://infisical:8080
+      - INFISICAL_UNIVERSAL_AUTH_CLIENT_ID=${PRESIDIO_INFISICAL_CLIENT_ID}
+      - INFISICAL_UNIVERSAL_AUTH_CLIENT_SECRET=${PRESIDIO_INFISICAL_CLIENT_SECRET}
+    networks:
+      - infra_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.presidio-anonymizer.rule=Host(`presidio-anonymizer.localhost`) && PathPrefix(`/anonymize`, `/deanonymize`, `/health`)
+      - traefik.http.routers.presidio-anonymizer.entrypoints=web
+      - traefik.http.routers.presidio-anonymizer.service=presidio-anonymizer
+      - traefik.http.services.presidio-anonymizer.loadbalancer.server.port=3000
+      - traefik.docker.network=infra_net
+
+networks:
+  infra_net:
+    external: true
