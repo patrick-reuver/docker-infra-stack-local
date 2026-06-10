@@ -197,7 +197,11 @@ Consumers (LiteLLM Router, Hermes, Second Brain, etc.) should:
 3. Send LLM response to Anonymizer `/deanonymize` to restore original values
 
 ### Configuration
-Secrets managed via Infisical at path `/presidio`:
+Secrets are managed via Infisical at path `/presidio` and injected at container startup by the local runtime wrapper image. The service `.env` file contains only the Universal Auth bootstrap values for the Machine Identity.
+
+The Infisical environment slug is currently `local`; keep the `.env` value aligned with the actual Infisical environment. The runtime wrapper accepts `INFISICAL_WORKSPACE_ID` or `INFISICAL_PROJECT_SLUG`; the existing `INFISICAL_PROJECT_ID` variable is retained as the workspace ID fallback for local compatibility. The Machine Identity must be added to the project with read access to `/presidio`; organization-level identity access alone is not enough for secret reads.
+
+Secrets expected at `/presidio`:
 - `SPACY_MODEL` (default: `de_core_news_lg`)
 - `TRANSFORMERS_MODEL` (default: `dslim/bert-base-NER`)
 - `PRESIDIO_LOG_LEVEL` (default: `INFO`)
@@ -214,6 +218,7 @@ Langfuse provides open-source LLM observability, tracing, and analytics. It runs
 - **API** (`langfuse-web:3000`) — Ingestion and query API
 - **Database** — Dedicated PostgreSQL database `langfuse_db` on shared Postgres
 - **Cache/Queue** — Dedicated Redis database (DB 1) on shared Redis
+- **Analytics store** — ClickHouse runs as a dedicated local compose project for Langfuse analytics and loads `/clickhouse` secrets through the same Infisical runtime wrapper model
 
 ### Features
 - LLM call tracing (inputs, outputs, latency, tokens, costs)
@@ -230,7 +235,11 @@ Consumers (LiteLLM Router, Hermes, etc.) integrate via:
 - Direct REST API
 
 ### Configuration
-Secrets managed via Infisical at path `/langfuse`:
+Secrets are managed via Infisical at path `/langfuse` and injected at container startup by the local runtime wrapper image. The service `.env` file contains only the Universal Auth bootstrap values for the Machine Identity.
+
+The Infisical environment slug is currently `local`; keep the `.env` value aligned with the actual Infisical environment. The runtime wrapper accepts `INFISICAL_WORKSPACE_ID` or `INFISICAL_PROJECT_SLUG`; the existing `INFISICAL_PROJECT_ID` variable is retained as the workspace ID fallback for local compatibility. The Machine Identity must be added to the project with read access to `/langfuse`; organization-level identity access alone is not enough for secret reads.
+
+Secrets expected at `/langfuse`:
 - `LANGFUSE_SALT` — Encryption salt (generate with `openssl rand -base64 32`)
 - `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` — API keys for projects
 - `DATABASE_URL` — PostgreSQL connection (shared Postgres)
