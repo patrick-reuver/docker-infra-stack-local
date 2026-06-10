@@ -76,14 +76,21 @@ The entries below explicitly distinguish between:
 - `presidio`
   - status: configured as a dedicated local compose project
   - purpose: PII detection and anonymization service for privacy-safe LLM interactions
-  - dependencies: external `infra_net`, shared `traefik`, Infisical for secrets
+  - dependencies: external `infra_net`, shared `traefik`, Infisical for runtime-injected secrets
   - components: `presidio-analyzer` (detection), `presidio-anonymizer` (anonymization/de-anonymization)
+  - secret model: wrapper images authenticate to local Infisical with Universal Auth and load `/presidio` before starting the upstream Presidio commands
   - custom: German PII recognizers (IBAN, Steuer-ID, postal codes, phone, addresses)
 - `langfuse`
   - status: configured as a dedicated local compose project
   - purpose: LLM observability, tracing, and analytics platform
-  - dependencies: external `infra_net`, shared `postgres` (dedicated `langfuse_db`), shared `redis` (dedicated DB 1), shared `traefik`, Infisical for secrets
+  - dependencies: external `infra_net`, shared `postgres` (dedicated `langfuse_db`), shared `redis` (dedicated DB 1), shared `traefik`, Infisical for runtime-injected secrets
   - components: `langfuse-web` (UI + API)
+  - secret model: wrapper image authenticates to local Infisical with Universal Auth and loads `/langfuse` before starting the upstream Langfuse entrypoint and server command
+- `clickhouse`
+  - status: configured as a dedicated local compose project
+  - purpose: ClickHouse analytics database used by Langfuse
+  - dependencies: external `infra_net`, shared `traefik`, Infisical for runtime-injected secrets
+  - secret model: wrapper image authenticates to local Infisical with Universal Auth and loads `/clickhouse` before starting the upstream ClickHouse entrypoint
 
 ### Present in Compose but Currently Disabled
 
