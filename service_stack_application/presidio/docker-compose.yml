@@ -1,17 +1,19 @@
-version: '3.8'
-
 name: infra-presidio
 
 services:
   presidio-analyzer:
-    image: mcr.microsoft.com/presidio-analyzer:latest
+    build:
+      context: ../..
+      dockerfile: service_stack_application/presidio/Dockerfile
+      args:
+        PRESIDIO_BASE_IMAGE: mcr.microsoft.com/presidio-analyzer:latest
+    image: infra-presidio-analyzer:local
     container_name: infra-presidio-analyzer
     restart: unless-stopped
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        infisical run --projectId=${INFISICAL_PROJECT_ID} --env=${INFISICAL_ENV} --path=/presidio -- \
-        /entrypoint.sh
+    env_file:
+      - .env
+    entrypoint: ["/usr/local/bin/infisical-runtime-env.sh", "--path=${INFISICAL_SECRET_PATH:-/presidio}", "--"]
+    command: ["./entrypoint.sh"]
     environment:
       - PORT=3000
       - LOG_LEVEL=${PRESIDIO_LOG_LEVEL:-INFO}
@@ -20,13 +22,6 @@ services:
       - TRANSFORMERS_MODEL=${TRANSFORMERS_MODEL:-dslim/bert-base-NER}
       - CUSTOM_RECOGNIZERS_ENABLED=${PRESIDIO_CUSTOM_RECOGNIZERS_ENABLED:-true}
       - CUSTOM_RECOGNIZERS_PATH=/app/custom_recognizers
-      # Infisical Machine Identity
-      - INFISICAL_PROJECT_ID=effe08c3-cb89-4f7d-8380-0e10434cdfee
-      - INFISICAL_ENV=local
-      - INFISICAL_AUTH_METHOD=universal-auth
-      - INFISICAL_HOST_URL=http://infisical:8080
-      - INFISICAL_UNIVERSAL_AUTH_CLIENT_ID=${PRESIDIO_INFISICAL_CLIENT_ID}
-      - INFISICAL_UNIVERSAL_AUTH_CLIENT_SECRET=${PRESIDIO_INFISICAL_CLIENT_SECRET}
     volumes:
       - ./custom_recognizers:/app/custom_recognizers:ro
     networks:
@@ -46,25 +41,22 @@ services:
       - traefik.docker.network=infra_net
 
   presidio-anonymizer:
-    image: mcr.microsoft.com/presidio-anonymizer:latest
+    build:
+      context: ../..
+      dockerfile: service_stack_application/presidio/Dockerfile
+      args:
+        PRESIDIO_BASE_IMAGE: mcr.microsoft.com/presidio-anonymizer:latest
+    image: infra-presidio-anonymizer:local
     container_name: infra-presidio-anonymizer
     restart: unless-stopped
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        infisical run --projectId=${INFISICAL_PROJECT_ID} --env=${INFISICAL_ENV} --path=/presidio -- \
-        /entrypoint.sh
+    env_file:
+      - .env
+    entrypoint: ["/usr/local/bin/infisical-runtime-env.sh", "--path=${INFISICAL_SECRET_PATH:-/presidio}", "--"]
+    command: ["./entrypoint.sh"]
     environment:
       - PORT=3000
       - LOG_LEVEL=${PRESIDIO_LOG_LEVEL:-INFO}
       - CORS_ENABLED=true
-      # Infisical Machine Identity
-      - INFISICAL_PROJECT_ID=effe08c3-cb89-4f7d-8380-0e10434cdfee
-      - INFISICAL_ENV=local
-      - INFISICAL_AUTH_METHOD=universal-auth
-      - INFISICAL_HOST_URL=http://infisical:8080
-      - INFISICAL_UNIVERSAL_AUTH_CLIENT_ID=${PRESIDIO_INFISICAL_CLIENT_ID}
-      - INFISICAL_UNIVERSAL_AUTH_CLIENT_SECRET=${PRESIDIO_INFISICAL_CLIENT_SECRET}
     networks:
       - infra_net
     healthcheck:

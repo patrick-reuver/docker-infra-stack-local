@@ -13,9 +13,9 @@ Microsoft Presidio deployment for PII detection and anonymization in the docker-
 
 ```bash
 # From docker-infra-stack root
-cd presidio
+cd service_stack_application/presidio
 cp .env.example .env
-# Edit .env with your values (or use Infisical)
+# Edit .env with the Infisical Machine Identity bootstrap values.
 docker compose up -d
 ```
 
@@ -79,7 +79,9 @@ curl http://presidio-anonymizer.localhost/health
 ## Infisical Secrets
 
 Project: `docker-infra-stack`
-Environment: `development`
+Environment slug: match `INFISICAL_ENV` in `.env` (currently `local`)
 Path: `/presidio`
 
-Secrets are injected at runtime via the Infisical agent or Docker Compose env_file.
+Secrets are injected at container startup by the local runtime wrapper image. The `.env` file only contains the Universal Auth Machine Identity bootstrap values; service configuration secrets stay in Infisical. The wrapper accepts `INFISICAL_WORKSPACE_ID` or `INFISICAL_PROJECT_SLUG`; for the current local setup it also treats `INFISICAL_PROJECT_ID` as the workspace ID fallback.
+
+The Machine Identity must be added to the Infisical project with read access to `/presidio`. Organization-level identity access alone is not enough for project secret reads.

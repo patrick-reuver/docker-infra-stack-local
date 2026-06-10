@@ -12,9 +12,9 @@ Langfuse deployment for LLM observability, tracing, and analytics in the docker-
 
 ```bash
 # From docker-infra-stack root
-cd langfuse
+cd service_stack_application/langfuse
 cp .env.example .env
-# Edit .env with your values (or use Infisical)
+# Edit .env with the Infisical Machine Identity bootstrap values.
 # Provision database first:
 # docker compose -f ../infra_stack_application/docker-compose.yml exec postgres psql -U apps_rw_user -d postgres -c "CREATE DATABASE langfuse_db;"
 docker compose up -d
@@ -28,7 +28,7 @@ docker compose up -d
    ```bash
    docker compose -f ../infra_stack_application/docker-compose.yml exec postgres psql -U apps_rw_user -d postgres -c "CREATE DATABASE langfuse_db;"
    ```
-4. **Infisical secrets** - Configure secrets at `/langfuse` path
+4. **Infisical secrets** - Configure application secrets at `/langfuse` path and Machine Identity bootstrap values in `.env`
 
 ## API Usage
 
@@ -64,10 +64,11 @@ export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Basic <base64(public_key:secret
 
 ## Configuration
 
-Environment variables (managed via Infisical at `/langfuse`):
+Application environment variables managed via Infisical at `/langfuse`:
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | PostgreSQL connection to `langfuse_db` |
+| `POSTGRES_APP_USER` / `POSTGRES_APP_PASSWORD` | Alternative | Used by the runtime wrapper to derive Langfuse `DATABASE_USERNAME` / `DATABASE_PASSWORD` when `DATABASE_URL` is not stored directly |
 | `REDIS_URL` | Yes | Redis connection (DB 1) |
 | `LANGFUSE_SALT` | Yes | Encryption salt (32 bytes base64) |
 | `NEXTAUTH_SECRET` | Yes | NextAuth secret (32 bytes base64) |
@@ -76,6 +77,7 @@ Environment variables (managed via Infisical at `/langfuse`):
 | `LANGFUSE_LOG_LEVEL` | No | Log level (default: `info`) |
 | `S3_*` | No | MinIO/S3 for file storage |
 | `CLICKHOUSE_*` | No | ClickHouse for analytics |
+| `CLICKHOUSE_MIGRATION_URL` | Alternative | Derived from `CLICKHOUSE_URL` by the runtime wrapper when not stored directly |
 
 ## Database Provisioning
 
@@ -145,7 +147,9 @@ exporter = OTLPSpanExporter(
 ## Infisical Secrets
 
 Project: `docker-infra-stack`
-Environment: `development`
+Environment slug: match `INFISICAL_ENV` in `.env` (currently `local`)
 Path: `/langfuse`
 
-Secrets are injected at runtime via the Infisical agent or Docker Compose env_file.
+Secrets are injected at container startup by the local runtime wrapper image. The `.env` file only contains the Universal Auth Machine Identity bootstrap values; Langfuse application secrets stay in Infisical. The wrapper accepts `INFISICAL_WORKSPACE_ID` or `INFISICAL_PROJECT_SLUG`; for the current local setup it also treats `INFISICAL_PROJECT_ID` as the workspace ID fallback.
+
+The Machine Identity must be added to the Infisical project with read access to `/langfuse`. Organization-level identity access alone is not enough for project secret reads.
