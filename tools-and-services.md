@@ -83,9 +83,9 @@ The entries below explicitly distinguish between:
 - `langfuse`
   - status: configured as a dedicated local compose project
   - purpose: LLM observability, tracing, and analytics platform
-  - dependencies: external `infra_net`, shared `postgres` (dedicated `langfuse_db`), shared `redis` (dedicated DB 1), shared `traefik`, Infisical for runtime-injected secrets
-  - components: `langfuse-web` (UI + API)
-  - secret model: wrapper image authenticates to local Infisical with Universal Auth and loads `/langfuse` before starting the upstream Langfuse entrypoint and server command
+  - dependencies: external `infra_net`, shared `postgres` (dedicated `langfuse_db`), shared `redis` with `REDIS_KEY_PREFIX=langfuse`, shared `minio`, dedicated `clickhouse`, shared `traefik`, Infisical for runtime-injected secrets
+  - components: `langfuse-web` (UI + API), `langfuse-worker` (async ingestion, ClickHouse writes, scoring/evaluation/export jobs)
+  - secret model: wrapper images authenticate to local Infisical with Universal Auth and load `/langfuse` before starting the upstream Langfuse v3 web and worker commands
 - `clickhouse`
   - status: configured as a dedicated local compose project
   - purpose: ClickHouse analytics database used by Langfuse

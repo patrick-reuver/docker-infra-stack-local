@@ -24,8 +24,9 @@ Langfuse provides LLM observability: tracing, metrics, evaluations, and prompt m
 
 Langfuse uses:
 - **Postgres** (shared `infra-postgres`) for persistent data (traces, scores, users, projects)
-- **Redis** (shared `infra-redis`) for queue, cache, session storage
-- **MinIO** (shared `infra-minio`) for file storage (optional, for attachments)
+- **Redis** (shared `infra-redis`) for queue, cache, and session storage, isolated with `REDIS_KEY_PREFIX=langfuse`
+- **ClickHouse** (dedicated `infra-clickhouse`) for analytics and trace/observation storage
+- **MinIO** (shared `infra-minio`) for file and event upload storage
 
 ## Requirements
 
@@ -36,7 +37,7 @@ Langfuse uses:
 | FR-02 | Run Langfuse API (port 3000) for ingestion | P0 |
 | FR-03 | Run Langfuse Worker for async processing (clickhouse, scoring) | P0 |
 | FR-04 | Use shared Postgres (`infra-postgres`) with dedicated DB `langfuse_db` | P0 |
-| FR-05 | Use shared Redis (`infra-redis`) for queue/cache | P0 |
+| FR-05 | Use shared Redis (`infra-redis`) for queue/cache with a Langfuse-specific key prefix | P0 |
 | FR-06 | Expose via Traefik at `langfuse.localhost` | P0 |
 | FR-07 | Store secrets (API keys, encryption keys, DB passwords) in Infisical | P0 |
 | FR-08 | Support OpenTelemetry ingestion | P1 |
@@ -52,7 +53,7 @@ Langfuse uses:
 | NFR-05 | Structured logging (JSON) | P2 |
 | NFR-06 | Data retention configurable | P2 |
 
-## Services (Langfuse v2.x)
+## Services (Langfuse v3)
 
 ### langfuse-web
 - Web UI + API server
@@ -80,21 +81,22 @@ POSTGRES_PASSWORD=${POSTGRES_APP_PASSWORD}
 # Redis (shared)
 REDIS_HOST=redis
 REDIS_PORT=6379
-REDIS_PASSWORD=${REDIS_PASSWORD}
-REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+REDIS_AUTH=${REDIS_PASSWORD}
+REDIS_KEY_PREFIX=langfuse
 
-# MinIO (shared, optional for file storage)
-S3_ACCESS_KEY_ID=${MINIO_APPS_USER}
-S3_SECRET_ACCESS_KEY=${MINIO_APPS_PASSWORD}
-S3_ENDPOINT=http://minio:9000
-S3_REGION=eu-central-1
-S3_BUCKET=langfuse
-S3_USE_SSL=false
+# MinIO/S3 (shared)
+LANGFUSE_S3_EVENT_UPLOAD_BUCKET=langfuse
+LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT=http://minio:9000
+LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE=true
+LANGFUSE_S3_MEDIA_UPLOAD_BUCKET=langfuse
+LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT=http://minio:9000
+LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE=true
 
 # Auth & Security
-NEXTAUTH_SECRET=${LANGFUSE_NEXTAUTH_SECRET}  # 32+ chars, generate with openssl
+NEXTAUTH_SECRET=${NEXTAUTH_SECRET}  # 32+ chars, generate with openssl
 NEXTAUTH_URL=http://langfuse.localhost
 LANGFUSE_SALT=${LANGFUSE_SALT}  # For encryption, 32+ chars
+LANGFUSE_ENCRYPTION_KEY=${LANGFUSE_ENCRYPTION_KEY}  # 64 hex chars, mapped to ENCRYPTION_KEY by wrapper
 LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}  # For API auth
 LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}  # For API auth
 
@@ -109,28 +111,29 @@ LANGFUSE_ENABLE_OAUTH=false
 LANGFUSE_DISABLE_SIGNUP=true  # Only invited users
 LANGFUSE_TRUST_PROXY=true  # Behind Traefik
 
-# ClickHouse (optional, for analytics)
-CLICKHOUSE_ENABLED=false  # Disable for now, use Postgres only
+# ClickHouse
+CLICKHOUSE_URL=http://clickhouse:8123
+CLICKHOUSE_MIGRATION_URL=clickhouse://clickhouse:9000
+CLICKHOUSE_USER=langfuse
+CLICKHOUSE_DB=langfuse
+CLICKHOUSE_CLUSTER_ENABLED=false
 ```
 
 ### Docker Compose Structure
 ```yaml
 services:
   langfuse-web:
-    image: langfuse/langfuse:latest
-    ports: ["3000:3000"]
-    environment: [...]
+    image: infra-langfuse:local  # wraps langfuse/langfuse:3
+    environment: *langfuse-env
     healthcheck: [...]
     networks: [infra_net]
-    depends_on: [postgres, redis]
     labels: [traefik routing]
 
   langfuse-worker:
-    image: langfuse/langfuse:latest
-    command: worker
-    environment: [...]
+    image: infra-langfuse-worker:local  # wraps langfuse/langfuse-worker:3
+    command: ["node", "worker/dist/index.js"]
+    environment: *langfuse-env
     networks: [infra_net]
-    depends_on: [postgres, redis]
 ```
 
 ## Traefik Routing
@@ -144,13 +147,15 @@ Project: docker-infra-stack
 Environment: development
 Path: /langfuse
 Secrets:
-  - LANGFUSE_NEXTAUTH_SECRET (openssl rand -hex 32)
+  - NEXTAUTH_SECRET (openssl rand -base64 32)
   - LANGFUSE_SALT (openssl rand -hex 32)
+  - LANGFUSE_ENCRYPTION_KEY (openssl rand -hex 32)
   - LANGFUSE_PUBLIC_KEY (langfuse generates, or custom)
   - LANGFUSE_SECRET_KEY (langfuse generates, or custom)
   - POSTGRES_APP_PASSWORD (from shared infra)
   - REDIS_PASSWORD (from shared infra)
-  - MINIO_APPS_PASSWORD (from shared infra)
+  - CLICKHOUSE_PASSWORD (from ClickHouse setup)
+  - LANGFUSE_S3_EVENT_UPLOAD_* (shared MinIO access)
 ```
 
 ## Database Provisioning
@@ -165,6 +170,7 @@ Secrets:
 - [ ] Environment variable validation
 - [ ] Database connection string construction
 - [ ] Redis connection string construction
+- [ ] Redis key prefix prevents BullMQ queue collisions with other shared-Redis consumers
 - [ ] MinIO/S3 config construction
 
 ### Integration Tests
@@ -193,3 +199,4 @@ Secrets:
 7. Secrets managed via Infisical (no hardcoded values)
 8. Infrastructure.md and tools-and-services.md updated
 9. Database `langfuse_db` provisioned in shared Postgres
+10. A trace ingested through `/api/public/ingestion` is readable through `/api/public/traces/{traceId}`

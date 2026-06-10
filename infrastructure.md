@@ -212,12 +212,13 @@ Secrets expected at `/presidio`:
 
 ## LLM Observability (Langfuse)
 
-Langfuse provides open-source LLM observability, tracing, and analytics. It runs on `infra_net` with its own PostgreSQL and Redis dependencies.
+Langfuse provides open-source LLM observability, tracing, and analytics. It runs on `infra_net` and reuses shared infrastructure with explicit per-service isolation where needed.
 
 - **Web UI** (`langfuse-web:3000`, routed via `langfuse.localhost`) — Dashboard for traces, scores, datasets
 - **API** (`langfuse-web:3000`) — Ingestion and query API
+- **Worker** (`langfuse-worker:3030`, internal only) — Async ingestion, ClickHouse writes, scoring/evaluation/export jobs
 - **Database** — Dedicated PostgreSQL database `langfuse_db` on shared Postgres
-- **Cache/Queue** — Dedicated Redis database (DB 1) on shared Redis
+- **Cache/Queue** — Shared Redis with `REDIS_KEY_PREFIX=langfuse` to isolate Langfuse BullMQ keys from other services such as Twenty CRM
 - **Analytics store** — ClickHouse runs as a dedicated local compose project for Langfuse analytics and loads `/clickhouse` secrets through the same Infisical runtime wrapper model
 
 ### Features
@@ -241,10 +242,13 @@ The Infisical environment slug is currently `local`; keep the `.env` value align
 
 Secrets expected at `/langfuse`:
 - `LANGFUSE_SALT` — Encryption salt (generate with `openssl rand -base64 32`)
+- `LANGFUSE_ENCRYPTION_KEY` — v3 encryption key (generate with `openssl rand -hex 32`; runtime wrapper exports it as `ENCRYPTION_KEY`)
 - `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` — API keys for projects
 - `DATABASE_URL` — PostgreSQL connection (shared Postgres)
-- `REDIS_URL` — Redis connection (shared Redis)
+- `REDIS_AUTH` or `REDIS_PASSWORD` — Redis authentication for shared Redis; compose sets `REDIS_KEY_PREFIX=langfuse`
 - `NEXTAUTH_SECRET` — NextAuth secret (generate with `openssl rand -base64 32`)
+
+Operational note: do not run Langfuse on unprefixed shared Redis keys. Twenty CRM also uses BullMQ queue names such as `webhook-queue`; `REDIS_KEY_PREFIX=langfuse` prevents Langfuse workers from consuming foreign jobs.
 
 ### Compose File
 `langfuse/docker-compose.yml`
