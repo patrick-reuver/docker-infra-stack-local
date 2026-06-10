@@ -1,12 +1,46 @@
 name: infra-langfuse
 
+x-langfuse-env: &langfuse-env
+  NODE_ENV: production
+  NEXT_TELEMETRY_DISABLED: "1"
+  NEXTAUTH_URL: http://langfuse.localhost
+  DATABASE_HOST: postgres
+  DATABASE_NAME: langfuse_db
+  DATABASE_ARGS: schema=public
+  CLICKHOUSE_DB: langfuse
+  CLICKHOUSE_CLUSTER_ENABLED: "false"
+  LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
+  LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
+  LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://minio:9000
+  LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
+  LANGFUSE_S3_EVENT_UPLOAD_PREFIX: events/
+  LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: langfuse
+  LANGFUSE_S3_MEDIA_UPLOAD_REGION: auto
+  LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: http://minio:9000
+  LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE: "true"
+  LANGFUSE_S3_MEDIA_UPLOAD_PREFIX: media/
+  LANGFUSE_S3_BATCH_EXPORT_ENABLED: "false"
+  LANGFUSE_S3_BATCH_EXPORT_BUCKET: langfuse
+  LANGFUSE_S3_BATCH_EXPORT_PREFIX: exports/
+  LANGFUSE_S3_BATCH_EXPORT_REGION: auto
+  LANGFUSE_S3_BATCH_EXPORT_ENDPOINT: http://minio:9000
+  LANGFUSE_S3_BATCH_EXPORT_EXTERNAL_ENDPOINT: http://minio.localhost
+  LANGFUSE_S3_BATCH_EXPORT_FORCE_PATH_STYLE: "true"
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  REDIS_KEY_PREFIX: langfuse
+  LANGFUSE_BULLMQ_SKIP_REDIS_VERSION_CHECK: "false"
+  REDIS_TLS_ENABLED: "false"
+  TELEMETRY_ENABLED: "true"
+  LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: "false"
+
 services:
   langfuse-web:
     build:
       context: ../..
       dockerfile: service_stack_application/langfuse/Dockerfile
       args:
-        LANGFUSE_BASE_IMAGE: langfuse/langfuse:latest
+        LANGFUSE_BASE_IMAGE: langfuse/langfuse:3
     image: infra-langfuse:local
     container_name: infra-langfuse-web
     restart: unless-stopped
@@ -26,22 +60,15 @@ services:
           node ./web/server.js --keepAliveTimeout 110000;
         fi
     environment:
-      - NODE_ENV=production
-      - NEXT_TELEMETRY_DISABLED=1
-      - NEXTAUTH_URL=http://langfuse.localhost
-      - DATABASE_HOST=postgres
-      - DATABASE_NAME=langfuse_db
-      - DATABASE_ARGS=schema=public
-      - CLICKHOUSE_DB=langfuse
-      - CLICKHOUSE_CLUSTER_ENABLED=false
+      <<: *langfuse-env
     networks:
       - infra_net
     healthcheck:
       test: ["CMD-SHELL", "curl -f \"http://$(hostname):3000/api/public/health\""]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 60s
+      retries: 6
+      start_period: 180s
     labels:
       - traefik.enable=true
       - traefik.http.routers.langfuse.rule=Host(`langfuse.localhost`)
@@ -49,6 +76,31 @@ services:
       - traefik.http.routers.langfuse.service=langfuse
       - traefik.http.services.langfuse.loadbalancer.server.port=3000
       - traefik.docker.network=infra_net
+
+  langfuse-worker:
+    build:
+      context: ../..
+      dockerfile: service_stack_application/langfuse/Dockerfile.worker
+      args:
+        LANGFUSE_WORKER_BASE_IMAGE: langfuse/langfuse-worker:3
+    image: infra-langfuse-worker:local
+    container_name: infra-langfuse-worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    entrypoint: ["/usr/local/bin/infisical-runtime-env.sh", "--path=${INFISICAL_SECRET_PATH:-/langfuse}", "--"]
+    command:
+      - node
+      - worker/dist/index.js
+    environment:
+      <<: *langfuse-env
+    networks:
+      - infra_net
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
 
 networks:
   infra_net:

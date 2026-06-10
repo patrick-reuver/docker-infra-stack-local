@@ -1,4 +1,4 @@
-ARG LANGFUSE_BASE_IMAGE=langfuse/langfuse:latest
+ARG LANGFUSE_BASE_IMAGE=langfuse/langfuse:3
 FROM ${LANGFUSE_BASE_IMAGE}
 
 USER root
