@@ -159,6 +159,11 @@ if [ -z "${SALT:-}" ] && [ -n "${LANGFUSE_SALT:-}" ]; then
   log "Derived env: SALT"
 fi
 
+if [ -z "${ENCRYPTION_KEY:-}" ] && [ -n "${LANGFUSE_ENCRYPTION_KEY:-}" ]; then
+  export ENCRYPTION_KEY="$LANGFUSE_ENCRYPTION_KEY"
+  log "Derived env: ENCRYPTION_KEY"
+fi
+
 if [ -z "${DATABASE_PASSWORD:-}" ] && [ -n "${POSTGRES_APP_PASSWORD:-}" ]; then
   export DATABASE_PASSWORD="$POSTGRES_APP_PASSWORD"
   log "Derived env: DATABASE_PASSWORD"

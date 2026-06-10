@@ -1,0 +1,10 @@
+ARG LANGFUSE_WORKER_BASE_IMAGE=langfuse/langfuse-worker:3
+FROM ${LANGFUSE_WORKER_BASE_IMAGE}
+
+USER root
+RUN apk add --no-cache curl jq
+
+COPY ../../scripts/infisical-runtime-env.sh /usr/local/bin/infisical-runtime-env.sh
+RUN chmod +x /usr/local/bin/infisical-runtime-env.sh
+
+USER 1000
