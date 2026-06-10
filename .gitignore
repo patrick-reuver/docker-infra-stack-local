@@ -1,16 +1,85 @@
+# Environment & Secrets
 .env
+**/.env
+**/.env.*
+!.env.example
+**/.env.*.example
+
+# Infisical specific
 infisical/.env
 infisical-mcp/.env
 infisical-mcp/.env.readonly
 infisical-mcp/.env.admin
-AGENTS.md
-CLAUDE.md
-docs
-.gitnexus
-.claude
-_workspace
+.infisical*
+infisical-token*
+
+# Security-sensitive
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+secrets/
+*.ovpn
+kubeconfig*
+id_rsa*
+id_ed25519*
+*.pem
+
+# Local configs & IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.log
+*.bak
+*.tmp
+*.temp
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
 
 # Beads / Dolt files (added by bd init)
 .dolt/
 *.db
 .beads-credential-key
+
+# Agent/Tool configs (local only)
+AGENTS.md
+CLAUDE.md
+.claude/
+.agents/
+_workspace/
+docs/
+.gitnexus/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# CI/CD local
+.vercel
+.netlify
+.vercel/
+
+# OS
+ehthumbs.db
+Desktop.ini
