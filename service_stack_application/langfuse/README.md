@@ -114,9 +114,17 @@ curl http://langfuse.localhost/api/public/health
 1. Start Langfuse: `docker compose up -d`
 2. Open `http://langfuse.localhost`
 3. Create admin account
-4. Create project → Get `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`
-5. Add keys to Infisical at `/langfuse`
-6. Restart Langfuse: `docker compose restart`
+4. Create organization (e.g., "Digi-Pal")
+5. Create project (e.g., "default") → Get `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`
+6. Add keys to Infisical at `/langfuse`
+7. Restart Langfuse: `docker compose restart`
+
+**Current Setup (as of 2026-06-10):**
+- Organization: Digi-Pal
+- Project: default
+- Health check: `curl http://langfuse.localhost/api/public/health` → `{"status":"OK","version":"3.180.0"}`
+- Test trace verified: `cdbc2a9a881cd674fb6472f1f5a42569`
+- Langfuse skill installed (repo-backed from github.com/langfuse/skills)
 
 ## Consumer Integration
 
