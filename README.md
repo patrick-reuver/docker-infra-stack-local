@@ -95,7 +95,7 @@ docker-infra-stack/
 ## Secret Management Model
 
 **Production / Standard Local**: All application secrets stored in **Infisical** at paths:
-- `/langfuse` — Langfuse keys, DB URL, Redis, ClickHouse, S3, salts
+- `/langfuse` — Langfuse keys, DB/Redis/ClickHouse/S3 credentials, salts, encryption keys
 - `/presidio` — Presidio config, model settings
 - `/clickhouse` — ClickHouse credentials
 - `/infisical` — Infisical app encryption/auth keys
