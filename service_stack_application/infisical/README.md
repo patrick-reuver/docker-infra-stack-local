@@ -1,55 +1,129 @@
-# Infisical on Shared Infra
+# Infisical Secret Manager
 
-This folder contains the self-hosted Infisical setup for the local shared infrastructure stack.
+Infisical deployment for centralized secret management in the docker-infra-stack. Provides UI, API, and MCP bridge for agent integration.
 
-## Architecture
+## Services
 
-- Runs as a dedicated container in the external `infra_net` Docker network.
-- Reuses the shared `postgres` and `redis` services from `infra_stack_application/docker-compose.yml`.
-- Is exposed through the existing Traefik instance at `http://infisical.localhost`.
+| Service | Internal Port | External Host | Description |
+|---------|--------------|---------------|-------------|
+| infisical | 8080 | `infisical.localhost` | Infisical web UI + API |
 
-## Files
+## Quick Start
 
-- `docker-compose.yml`: Infisical runtime plus the one-shot DB initialization service.
-- `.env.example`: local configuration template for the Infisical stack.
-- `scripts/init-db.sh`: idempotent database creation step for `infisical_db`.
+```bash
+# From docker-infra-stack root
+cd service_stack_application/infisical
+cp .env.example .env
+# Edit .env with secure values (ENCRYPTION_KEY, AUTH_SECRET, DB creds)
+docker compose up -d
 
-## Setup
+# First-time setup:
+# 1. Open http://infisical.localhost
+# 2. Create admin account
+# 3. Create project "docker-infra-stack"
+# 4. Create Machine Identities for each service (Universal Auth)
+# 5. Add secrets to paths: /langfuse, /presidio, /clickhouse, /infisical
+```
 
-1. Copy `.env.example` to `.env`.
-2. Replace placeholder secrets and runtime passwords.
-3. Keep both credential scopes separate:
-   - `POSTGRES_ADMIN_*` only for the one-shot DB provisioning step
-   - `DB_*` for the Infisical runtime connection
-4. URI-encode the runtime password into `DB_PASSWORD_URLENCODED` if the shared Postgres password contains special characters such as `+`, `/`, `:` or `@`.
-5. Ensure the shared infra stack is already running.
-6. Create the database:
-   `docker compose --env-file .env --profile setup up infisical-db-init`
-7. Start Infisical:
-   `docker compose --env-file .env up -d infisical`
+## Prerequisites
 
-## Validation
+1. **Shared Postgres** must be running with `apps_rw_user`
+2. **Shared Redis** must be running
+3. **Database provisioning** — Create dedicated database:
+   ```bash
+   docker compose -f ../infra_stack_application/docker-compose.yml exec postgres psql -U apps_rw_user -d postgres -c "CREATE DATABASE infisical_db;"
+   ```
+   Or use the init script: `./scripts/init-db.sh`
 
-- DB init should report that the database is ready for the runtime user.
-- `docker compose ps` should show `infra-infisical` as running.
-- `http://infisical.localhost` should be reachable through Traefik.
+## Configuration
 
-## MCP Follow-Up
+### Application secrets (in `.env` — NOT Infisical, these bootstrap Infisical itself):
 
-The MCP follow-up is implemented in this repository as a separate service under `../infisical-mcp/`.
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `SITE_URL` | Yes | Public URL via Traefik (e.g., `http://infisical.localhost`) |
+| `POSTGRES_ADMIN_USER` | Yes | `postgres` |
+| `POSTGRES_ADMIN_PASSWORD` | Yes | Postgres admin password |
+| `DB_HOST` | Yes | `postgres` |
+| `DB_PORT` | Yes | `5432` |
+| `DB_NAME` | Yes | `infisical_db` |
+| `DB_USER` | Yes | `apps_rw_user` |
+| `DB_PASSWORD` | Yes | App runtime password |
+| `DB_PASSWORD_URLENCODED` | Yes | URL-encoded version of above |
+| `REDIS_HOST` | Yes | `redis` |
+| `REDIS_PORT` | Yes | `6379` |
+| `REDIS_PASSWORD` | Yes | Redis password |
+| `ENCRYPTION_KEY` | Yes | 32+ hex chars (generate: `openssl rand -hex 32`) |
+| `AUTH_SECRET` | Yes | Base64 secret (generate: `openssl rand -base64 32`) |
+| `INFISICAL_IMAGE_TAG` | No | Docker image tag (default: `latest`) |
 
-Key decisions:
+### Machine Identity Bootstrap (for other services to read from Infisical):
 
-- the MCP bridge is a dedicated container, not part of the main `infisical` container
-- the preferred runtime target from inside Docker is `http://infisical:8080`
-- authentication uses an Infisical Organization Machine Identity with Universal Auth
-- rollout is phased: read-oriented pilot first, explicit write enablement later
+Created in Infisical UI: **Project Settings → Machine Identities → Universal Auth**
+- One per service: `clickhouse`, `langfuse`, `presidio`, `infisical-mcp-readonly`, `infisical-mcp-admin`
+- Each gets: `Client ID`, `Client Secret`
+- Add to respective service's `.env` as:
+  - `INFISICAL_UNIVERSAL_AUTH_CLIENT_ID`
+  - `INFISICAL_UNIVERSAL_AUTH_CLIENT_SECRET`
 
-Current local state:
+## Health Check
 
-- Codex is configured locally as an MCP client against the dedicated `infisical-mcp` service
-- Codex reaches Infisical through the MCP bridge, not by storing a user login in Codex itself
-- authentication is backed by the Organization Machine Identity credentials supplied to the MCP container
-- the preferred operational model is two separate Organization Machine Identities: `codex-readonly` and `codex-admin`
+```bash
+curl http://infisical.localhost/api/status
+# Returns: {"status":"ok"}
+```
 
-This split keeps the core secrets platform and the AI-facing MCP surface independently operable and easier to reason about from a security perspective.
+## Infisical MCP Bridge (Codex/Agents)
+
+Located in `infisical-mcp/`. Separate compose stack for MCP server connecting Codex to this Infisical instance.
+
+### Two Profiles
+
+| Profile | Purpose | Machine Identity |
+|---------|---------|------------------|
+| `codex-readonly` | Discovery, reads (`list-projects`, `list-secrets`, `get-secret`) | Org role: minimal; Project role: read-only |
+| `codex-admin` | Writes (`create-secret`, `update-secret`, `create-project`, etc.) | Org role: Admin/custom; Project role: Admin/write |
+
+### Setup
+
+```bash
+cd infisical-mcp
+cp .env.readonly.example .env.readonly
+cp .env.admin.example .env.admin
+# Fill in Client ID/Secret for each Machine Identity
+```
+
+### Codex Registration
+
+Use `docker compose run --rm` with the appropriate env file. See `codex-mcp-server.example.json` for MCP server config.
+
+### Validated Project Types for `list-projects`
+
+Use concrete types — `all` does not work on self-hosted:
+- `secret-manager`, `cert-manager`, `kms`, `ssh`, `secret-scanning`, `pam`, `ai`
+
+## Network
+
+Joins `infra_net` for internal DNS:
+- `postgres:5432`, `redis:6379`
+
+## Data Persistence
+
+- Postgres: Shared `infra-postgres` (database `infisical_db`)
+- Redis: Shared `infra-redis` (database 0)
+- MinIO: Optional, for object storage (not configured by default)
+
+## Troubleshooting
+
+**Zod error for `INFISICAL_TOKEN`**: Remove `INFISICAL_TOKEN` from container env when using `universal-auth`.
+
+**`list-projects` fails with `type="all"`**: Use concrete type (see validated types above).
+
+**Universal Auth returns 401**: Verify Client ID (not Machine Identity ID) and Client Secret match. Restart MCP session to pick up updated `.env`.
+
+## Operational Notes
+
+- Prefer `http://infisical:8080` inside Docker; `http://infisical.localhost` for host tools
+- Machine Identity must be added to **specific project** for secret access (org-level alone insufficient)
+- Rotate Universal Auth credentials in Infisical if ever exposed
+- MCP bridge runs ephemeral (`docker compose run --rm`) — not persistent sidecars
