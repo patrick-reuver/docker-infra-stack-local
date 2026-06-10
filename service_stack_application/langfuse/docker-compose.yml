@@ -1,29 +1,43 @@
-version: '3.8'
-
 name: infra-langfuse
 
 services:
   langfuse-web:
-    image: langfuse/langfuse:latest
+    build:
+      context: ../..
+      dockerfile: service_stack_application/langfuse/Dockerfile
+      args:
+        LANGFUSE_BASE_IMAGE: langfuse/langfuse:latest
+    image: infra-langfuse:local
     container_name: infra-langfuse-web
     restart: unless-stopped
-    entrypoint: ["/bin/sh", "-c"]
+    env_file:
+      - .env
+    entrypoint: ["/usr/local/bin/infisical-runtime-env.sh", "--path=${INFISICAL_SECRET_PATH:-/langfuse}", "--"]
     command:
+      - dumb-init
+      - --
+      - ./web/entrypoint.sh
+      - /bin/sh
+      - -c
       - |
-        infisical run --projectId=${INFISICAL_PROJECT_ID} --env=${INFISICAL_ENV} --path=/langfuse -- \
-        /entrypoint.sh
+        if [ -n "$$NEXT_PUBLIC_LANGFUSE_CLOUD_REGION" ]; then
+          node --import dd-trace/initialize.mjs ./web/server.js --keepAliveTimeout 110000;
+        else
+          node ./web/server.js --keepAliveTimeout 110000;
+        fi
     environment:
-      # Infisical Machine Identity
-      - INFISICAL_PROJECT_ID=effe08c3-cb89-4f7d-8380-0e10434cdfee
-      - INFISICAL_ENV=local
-      - INFISICAL_AUTH_METHOD=universal-auth
-      - INFISICAL_HOST_URL=http://infisical:8080
-      - INFISICAL_UNIVERSAL_AUTH_CLIENT_ID=${LANGFUSE_INFISICAL_CLIENT_ID}
-      - INFISICAL_UNIVERSAL_AUTH_CLIENT_SECRET=${LANGFUSE_INFISICAL_CLIENT_SECRET}
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+      - NEXTAUTH_URL=http://langfuse.localhost
+      - DATABASE_HOST=postgres
+      - DATABASE_NAME=langfuse_db
+      - DATABASE_ARGS=schema=public
+      - CLICKHOUSE_DB=langfuse
+      - CLICKHOUSE_CLUSTER_ENABLED=false
     networks:
       - infra_net
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/public/health"]
+      test: ["CMD-SHELL", "curl -f \"http://$(hostname):3000/api/public/health\""]
       interval: 30s
       timeout: 10s
       retries: 3

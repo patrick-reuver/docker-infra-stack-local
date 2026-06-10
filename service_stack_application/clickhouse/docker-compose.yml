@@ -1,17 +1,22 @@
-version: '3.8'
-
 name: infra-clickhouse
 
 services:
   clickhouse:
-    image: clickhouse/clickhouse-server:24.8
+    build:
+      context: ../..
+      dockerfile: service_stack_application/clickhouse/Dockerfile
+      args:
+        CLICKHOUSE_BASE_IMAGE: clickhouse/clickhouse-server:24.8
+    image: infra-clickhouse:local
     container_name: infra-clickhouse
     restart: unless-stopped
+    env_file:
+      - .env
+    entrypoint: ["/usr/local/bin/infisical-runtime-env.sh", "--path=${INFISICAL_SECRET_PATH:-/clickhouse}", "--", "/entrypoint.sh"]
     environment:
       - CLICKHOUSE_DB=langfuse
       - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
-      - CLICKHOUSE_USER=${CLICKHOUSE_USER:-langfuse}
-      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
+      - CLICKHOUSE_USER=langfuse
     volumes:
       - clickhouse_data:/var/lib/clickhouse
     networks:
