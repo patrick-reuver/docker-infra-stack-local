@@ -56,6 +56,8 @@ CLAUDE.md
 .agents/
 _workspace/
 docs/
+!service_stack_application/litellm/docs/
+!service_stack_application/litellm/docs/**
 .gitnexus/
 
 # Build artifacts
