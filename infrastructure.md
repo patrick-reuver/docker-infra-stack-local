@@ -54,6 +54,7 @@ Traefik is the shared HTTP entrypoint and currently routes these infra endpoints
 - `http://presidio.localhost` -> Presidio Analyzer API (PII detection)
 - `http://presidio-anonymizer.localhost` -> Presidio Anonymizer API (anonymization/de-anonymization)
 - `http://langfuse.localhost` -> Langfuse UI and API (LLM observability)
+- `http://honcho.localhost` -> Honcho API (Second Brain Memory Layer)
 
 Consumer routes that are currently live or configured in the local workspace:
 
@@ -280,6 +281,10 @@ Based on live Docker inspection, these containers are currently attached to `inf
 - `infra-hoppscotch`
   - live on `infra_net`
   - mentioned here as a running consumer even though no matching repo-local source was identified during this documentation pass
+- `second_brain` / Honcho
+  - containers: `second-brain-honcho-api`, `second-brain-honcho-deriver`
+  - shared route: `http://honcho.localhost`
+  - dependencies: Postgres (`second_brain` database, `honcho` schema), Redis (DB index `/2`)
 
 ### Configured in the Workspace, Not Currently Live-Confirmed
 
