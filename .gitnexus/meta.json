@@ -1,61 +1,13 @@
 {
   "repoPath": "/Users/patrickreuver/_workspace/02_coding/docker-infra-stack",
-  "lastCommit": "bfcfa1321505b7dae901d44c102caa6dbcbb38c5",
-  "indexedAt": "2026-06-10T14:50:39.284Z",
+  "lastCommit": "b539f1c18b507b98969107a0e79fc1125bc81f8d",
+  "indexedAt": "2026-06-10T20:38:30.295Z",
   "stats": {
-    "files": 30,
-    "nodes": 221,
-    "edges": 228,
-    "communities": 2,
-    "processes": 1,
-    "embeddings": 30
-  },
-  "capabilities": {
-    "graph": {
-      "provider": "ladybugdb",
-      "status": "available"
-    },
-    "fts": {
-      "provider": "ladybugdb-fts",
-      "status": "available"
-    },
-    "vectorSearch": {
-      "provider": "exact-scan",
-      "status": "exact-scan",
-      "exactScanLimit": 10000
-    }
-  },
-  "schemaVersion": 1,
-  "fileHashes": {
-    "tools-and-services.md": "44ceb5b9c748fea65a8f34acb71d250afbb4d3cdab6bd5ee1b09255647a7c83a",
-    "infrastructure.md": "c91902eeb17ffc8abdaa98724a3e3f47d123dd0c343f1682f66a1b28e1f09d11",
-    "databases.md": "3444b643108832ad7dfd7385e2860765efc248ac67c1800aa6f2536612eadadf",
-    "scripts/postgres-collation-validate.sh": "5587eb2acede3f8e2d97b10ff3d3f3de792bb4dd91f59a444f5849314dfbde11",
-    "scripts/postgres-collation-remediate.sh": "35d6ad7b228ae498e19429cb2f4d03c7e7f09e5dd84fbd035b252efe7bb7273e",
-    "scripts/postgres-collation-inventory.sh": "8193074c17fd6634d5cd26bb92eb07ebfac4086b3e4fdd79c9cbcdb8770cbcbe",
-    "scripts/postgres-clone-pgdata.sh": "ab4fe1f6c6b3eec45929ca6ae21d8a007ccacee988b4d176d06b8a87663625d9",
-    "scripts/infisical-runtime-env.sh": "c75b277ee1375a4d047d03ff3966306106bfa566b6e242feb774f53444a0b9d7",
-    "infra_stack_application/docker-compose.yml": "f96643e6aef1acd7845fb2e111036c0800d93c9a71e0ff2e291395279ebda92e",
-    "infra_stack_application/docker-compose.collation-remediation.yml": "ee6c111fd5d8a07e4d9b0010904743078722bb349852dcd46b4a767138ec178f",
-    "service_stack_application/presidio/docker-compose.yml": "bbb27351849215a5222497444fe361a2e7fee1c42f2e08e89abf4805a28949ba",
-    "service_stack_application/presidio/SPEC.md": "afc67e1c3966f8795ce8da6850d0242a59789d5b7cfbb79259de9824bd49de76",
-    "service_stack_application/presidio/README.md": "28d31640327bd8f06b78700369286a6360d1c58796c37bb1ac0d2980c1d0c545",
-    "service_stack_application/presidio/Dockerfile": "2e391634c006e63e4aa1ac36230add850d926488ccb8383b5a0a1619d32e7fda",
-    "service_stack_application/langfuse/docker-compose.yml": "4734e03cb434eadd455f1ff58ca3a5b349b1cd52888ad824d52d80d78638d642",
-    "service_stack_application/langfuse/SPEC.md": "f982055605b84606341efc92e5c504a2cfc52c68ac853e1f68bbd0e28761ef2b",
-    "service_stack_application/langfuse/README.md": "7777c2635df423710cd126a64d15d14d0609f061cdade51f4582ae52ecf28bd0",
-    "service_stack_application/langfuse/Dockerfile": "c6e8dea29f60e78ba0bdc04b2f9a73e1fb44f25d1c18b9b870ef8be9ebc4cdec",
-    "service_stack_application/infisical/docker-compose.yml": "387314424f62c6dbd32a08cce30f227e1e7c5fd8539d12c5e8b5a09466ab42a9",
-    "service_stack_application/infisical/README.md": "f32123af7081415b15a2d89768be108a1c19f710ca7f04c61ea8b97cb7c88704",
-    "service_stack_application/clickhouse/docker-compose.yml": "162deb617735f7c962c45b9e025f426a3da654942fd9bd7edf9d04b13d57d70e",
-    "service_stack_application/clickhouse/docker-compose.clickhouse.yml": "4f37340c9055fc56ce06d2ac04d87a7620dacfcf6b4205ef2040c373e8f1dfd8",
-    "service_stack_application/clickhouse/Dockerfile": "79891991309b0e361f4998ec957b9f174c3ed3c49df3d2f397c785d9766572d1",
-    "service_stack_application/presidio/custom_recognizers/german_recognizers.py": "793820c311d89ab7d46540747008517b634c567ebfc6db88934573ebc7ef7ad3",
-    "service_stack_application/presidio/custom_recognizers/__init__.py": "f3ebc0b58bc24aa4cecb2b930cca18524be8b7b059a8a539bc5005dee6baf16e",
-    "service_stack_application/infisical/scripts/init-db.sh": "0a58b7298ee953188122d30300007a8f7ad7395590b45f93f46047cc5073ff7a",
-    "service_stack_application/infisical/infisical-mcp/patch-descriptors.mjs": "616d481f1c0df7b9d699f5f0092d8caec6a12ea7508e7875e90ca69936d5d654",
-    "service_stack_application/infisical/infisical-mcp/docker-compose.yml": "33df00afae3364e99e058f67f94f528687de877d04df106be3a4dd58bcc90f04",
-    "service_stack_application/infisical/infisical-mcp/codex-mcp-server.example.json": "e684fc9385af8723ab345123644f7923058c9acea387744ba046f5495201b075",
-    "service_stack_application/infisical/infisical-mcp/README.md": "084abaa6db81ea81730c8f31ba4d7b0713614d976ce428c6145a24ffddaf57d7"
+    "files": 34,
+    "nodes": 51,
+    "edges": 52,
+    "communities": 5,
+    "processes": 0,
+    "embeddings": 0
   }
 }
