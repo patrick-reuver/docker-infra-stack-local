@@ -25,7 +25,7 @@ Quelle: Laufende Instanz `infra-postgres` (`postgres:16`), ausgelesen per `psql`
 | `infisical_db` | `public` |
 | `omi_db` | `public` |
 | `postgres` | `public` |
-| `second_brain` | `public` |
+| `second_brain` | `honcho`, `public` |
 | `twenty_db` | `core`, `public`, `workspace_8vlg4mwbhz75ivvkmky2lrjle` |
 
 ## Pflegehinweis
