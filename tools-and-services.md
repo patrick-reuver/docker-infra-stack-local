@@ -91,6 +91,15 @@ The entries below explicitly distinguish between:
   - purpose: ClickHouse analytics database used by Langfuse
   - dependencies: external `infra_net`, shared `traefik`, Infisical for runtime-injected secrets
   - secret model: wrapper image authenticates to local Infisical with Universal Auth and loads `/clickhouse` before starting the upstream ClickHouse entrypoint
+|- `honcho` / `second_brain`
+  - status: configured as a separate compose project in `second_brain/infra/docker-compose.honcho.yml`
+  - purpose: AI-native cross-session memory layer with dialectic reasoning, peer modeling, and conclusion derivation
+  - route: `http://honcho.localhost` (via shared Traefik, defined in consumer compose project)
+  - dependencies: external `infra_net`, shared `postgres` (dedicated `second_brain` database, `honcho` schema), shared `redis` with DB index `/2`
+  - components: `honcho-api` (REST API, health on `:8000`), `honcho-deriver` (async queue processor for conclusions, health on `:9090`)
+  - secret model: env file `.env.honcho.local` in the second_brain project directory, managed through local `.env` conventions
+  - consumers: Hermes (as Memory Provider plugin + MCP tools), CLI (`honcho` via pip)
+  - note: for workspace migration details and architecture, see `second_brain/docs/04-workspace-migration.md` and `infrastructure.md`
 
 ### Present in Compose but Currently Disabled
 
