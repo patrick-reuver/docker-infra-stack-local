@@ -32,7 +32,7 @@ id_ed25519*
 *.swp
 *.swo
 *~
-.DS_Store
+**/.DS_Store
 Thumbs.db
 *.log
 *.bak
@@ -59,6 +59,9 @@ docs/
 !service_stack_application/litellm/docs/
 !service_stack_application/litellm/docs/**
 .gitnexus/
+
+# Local generated files
+docker-infra-stack-architecture.html
 
 # Build artifacts
 dist/
