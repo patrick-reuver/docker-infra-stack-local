@@ -292,6 +292,25 @@ MCP --> INF
 
 ---
 
+## Built With
+
+| Projekt | Website | GitHub-Quelle | Lizenz |
+|---------|---------|--------------|--------|
+| **Traefik** | [traefik.io](https://traefik.io) | [traefik/traefik](https://github.com/traefik/traefik) | MIT |
+| **PostgreSQL** | [postgresql.org](https://www.postgresql.org) | [postgres/postgres](https://github.com/postgres/postgres) | PostgreSQL |
+| **pgvector** | — | [pgvector/pgvector](https://github.com/pgvector/pgvector) | PostgreSQL |
+| **Redis** | [redis.io](https://redis.io) | [redis/redis](https://github.com/redis/redis) | BSD-3 |
+| **MinIO** | [min.io](https://min.io) | [minio/minio](https://github.com/minio/minio) | AGPL v3 |
+| **Infisical** | [infisical.com](https://infisical.com) | [Infisical/infisical](https://github.com/Infisical/infisical) | MIT |
+| **Langfuse** | [langfuse.com](https://langfuse.com) | [langfuse/langfuse](https://github.com/langfuse/langfuse) | MIT |
+| **ClickHouse** | [clickhouse.com](https://clickhouse.com) | [ClickHouse/ClickHouse](https://github.com/ClickHouse/ClickHouse) | Apache 2.0 |
+| **Presidio** | — | [microsoft/presidio](https://github.com/microsoft/presidio) | MIT |
+| **LiteLLM** *(planned)* | [litellm.vercel.app](https://litellm.vercel.app) | [BerriAI/litellm](https://github.com/BerriAI/litellm) | MIT |
+| **Prometheus** *(optional)* | [prometheus.io](https://prometheus.io) | [prometheus/prometheus](https://github.com/prometheus/prometheus) | Apache 2.0 |
+| **Grafana** *(optional)* | [grafana.com](https://grafana.com) | [grafana/grafana](https://github.com/grafana/grafana) | AGPL v3 |
+
+---
+
 ## Quick Start
 
 ```bash
