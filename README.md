@@ -6,6 +6,12 @@ Self-hosted Docker-Infrastruktur als gemeinsame Basis für lokale Anwendungen, A
 
 ---
 
+## Demo
+
+<video src="assets/docker-infra-stack-promo.mp4" controls width="100%"></video>
+
+---
+
 ## Architecture
 
 ### Layer Model
