@@ -6,9 +6,9 @@ Self-hosted Docker-Infrastruktur als gemeinsame Basis für lokale Anwendungen, A
 
 ---
 
-## Demo
+## Kurzvorstellung
 
-<video src="assets/docker-infra-stack-promo.mp4" controls width="100%"></video>
+https://github.com/user-attachments/assets/52d42371-e276-4f13-87a1-88be02599806
 
 ---
 
@@ -378,6 +378,10 @@ docker-infra-stack/
 ```
 
 ---
+
+
+https://github.com/user-attachments/assets/495dd701-08cb-4c3a-a337-2ec1b8b57693
+
 
 ## Services
 
