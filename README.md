@@ -379,10 +379,6 @@ docker-infra-stack/
 
 ---
 
-
-https://github.com/user-attachments/assets/495dd701-08cb-4c3a-a337-2ec1b8b57693
-
-
 ## Services
 
 | Service | Port (Internal) | Host (Traefik) | Status | Beschreibung |
