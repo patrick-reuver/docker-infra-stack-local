@@ -17,6 +17,7 @@ The repository also contains additional shared service compose projects:
 - `infisical-mcp` as the dedicated MCP bridge for Codex and other MCP clients, defined in `infisical-mcp/docker-compose.yml`
 - `presidio` as the PII detection and anonymization service, defined in `presidio/docker-compose.yml`
 - `langfuse` as the LLM observability and tracing platform, defined in `langfuse/docker-compose.yml`
+- `omniroute` as the local AI gateway and dashboard, defined in `omniroute/omniroute.yml`
 
 The compose file also contains optional observability services that are currently present but commented out:
 
@@ -54,7 +55,9 @@ Traefik is the shared HTTP entrypoint and currently routes these infra endpoints
 - `http://presidio.localhost` -> Presidio Analyzer API (PII detection)
 - `http://presidio-anonymizer.localhost` -> Presidio Anonymizer API (anonymization/de-anonymization)
 - `http://langfuse.localhost` -> Langfuse UI and API (LLM observability)
+- `http://omniroute.localhost` -> OmniRoute dashboard and API gateway
 - `http://honcho.localhost` -> Honcho API (Second Brain Memory Layer)
+- `http://immich.localhost` -> Immich Foto Library (external compose project)
 
 Consumer routes that are currently live or configured in the local workspace:
 
@@ -116,6 +119,8 @@ Twenty CRM is the documented consumer for `twenty_db`. Existing runbooks also de
 Redis is provided as a shared runtime service on `redis:6379`. Connected applications reuse the same central instance instead of bringing their own Redis container unless there is a specific reason to isolate it.
 
 Infisical also uses the shared Redis instance for its runtime cache and background coordination.
+
+OmniRoute uses the same shared Redis instance with database index `/2` through `REDIS_URL=redis://:${REDIS_PASSWORD}@infra-redis:6379/2`. It does not bring a dedicated Redis sidecar inside this stack.
 
 ### MinIO
 
@@ -254,6 +259,22 @@ Operational note: do not run Langfuse on unprefixed shared Redis keys. Twenty CR
 ### Compose File
 `langfuse/docker-compose.yml`
 
+## AI Gateway (OmniRoute)
+
+OmniRoute provides a local AI gateway with a dashboard and OpenAI-compatible API bridge. It runs as a service-stack application on `infra_net`:
+
+- compose file: `service_stack_application/omniroute/omniroute.yml`
+- route: `http://omniroute.localhost/dashboard/`
+- container: `infra-omniroute`
+- dashboard/internal service port: `20128`
+- API bridge port: `20129`
+- Redis: shared `infra-redis`, DB index `/2`
+- data: `/Users/patrickreuver/_workspace/04_docker/infra-stack/omniroute` mounted to `/app/data`
+
+The service uses the published `diegosouzapw/omniroute:latest` image. The local OmniRoute source repository is not required for runtime operation.
+
+The compose healthcheck intentionally checks the dashboard route because the upstream `healthcheck.mjs` currently times out against this image while the dashboard itself returns HTTP 200.
+
 ## Infisical MCP Bridge — Write-Capable Operation
 
 For write-capable operation, role assignment has two layers:
@@ -296,6 +317,43 @@ These repositories are configured to use `infra_net` and/or Traefik host routing
   - routes: `http://excalidraw.localhost`, `http://drawio.localhost`, `http://fossflow.localhost`
 
 This split matters: `infra_net` is a central integration network, not a requirement for every repository all the time.
+
+
+
+## External Consumer: Immich Foto Library
+
+Immich is operated as an external application repository rather than as a service folder inside this infra repository:
+
+```text
+/Users/patrickreuver/_workspace/02_coding/immich-foto-library
+```
+
+It joins `infra_net` for Traefik routing but brings its own runtime dependencies:
+
+- `infra-immich-server` — Immich web/API, routed at `http://immich.localhost`
+- `infra-immich-postgres` — dedicated Immich Postgres with VectorChord/pgvectors
+- `infra-immich-redis` — dedicated Valkey/Redis
+- `infra-immich-ml` — Immich machine learning service
+
+Immich does **not** use the shared Postgres/Redis instances because it needs an application-specific database image and isolation. To avoid Docker DNS collisions on `infra_net`, runtime config points to explicit container names:
+
+```text
+DB_HOSTNAME=infra-immich-postgres
+REDIS_HOSTNAME=infra-immich-redis
+```
+
+Cloud libraries are provided by the service-neutral host mount layer:
+
+```text
+/Users/patrickreuver/_workspace/07_mounts
+```
+
+Only selected read-only mounts are bind-mounted into the Immich server container. iCloud Drive exists as a Host mount but is intentionally not mounted into Immich; iCloud Photos is mounted as `/mnt/icloud-photos`.
+
+See also:
+
+- `/Users/patrickreuver/_workspace/07_mounts/README.md`
+- `/Users/patrickreuver/_workspace/02_coding/immich-foto-library/docs/README.md`
 
 ## Tooling Initialization Status
 

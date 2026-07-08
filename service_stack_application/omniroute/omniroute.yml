@@ -1,0 +1,38 @@
+name: infra-omniroute
+
+services:
+  omniroute:
+    image: diegosouzapw/omniroute:latest
+    container_name: infra-omniroute
+    restart: unless-stopped
+    environment:
+      DATA_DIR: /app/data
+      PORT: 20128
+      DASHBOARD_PORT: 20128
+      API_PORT: 20129
+      API_HOST: 0.0.0.0
+      REDIS_URL: redis://:${REDIS_PASSWORD}@infra-redis:6379/2
+    volumes:
+      - /Users/patrickreuver/_workspace/04_docker/infra-stack/omniroute:/app/data
+    networks:
+      - infra_net
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=infra_net
+      - traefik.http.routers.omniroute.rule=Host(`omniroute.localhost`)
+      - traefik.http.routers.omniroute.entrypoints=web
+      - traefik.http.routers.omniroute.service=omniroute
+      - traefik.http.services.omniroute.loadbalancer.server.port=20128
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "fetch('http://127.0.0.1:20128/dashboard',{signal:AbortSignal.timeout(5000)}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  infra_net:
+    external: true

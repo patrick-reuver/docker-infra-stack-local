@@ -86,11 +86,25 @@ The entries below explicitly distinguish between:
   - dependencies: external `infra_net`, shared `postgres` (dedicated `langfuse_db`), shared `redis` with `REDIS_KEY_PREFIX=langfuse`, shared `minio`, dedicated `clickhouse`, shared `traefik`, Infisical for runtime-injected secrets
   - components: `langfuse-web` (UI + API), `langfuse-worker` (async ingestion, ClickHouse writes, scoring/evaluation/export jobs)
   - secret model: wrapper images authenticate to local Infisical with Universal Auth and load `/langfuse` before starting the upstream Langfuse v3 web and worker commands
+- `omniroute`
+  - status: active as a dedicated local compose project
+  - purpose: local AI gateway, dashboard, and OpenAI-compatible API bridge
+  - route: `http://omniroute.localhost/dashboard/`
+  - dependencies: external `infra_net`, shared `traefik`, shared `redis` DB `/2`, host bind-mounted data directory
+  - components: `infra-omniroute` (dashboard on `20128`, API bridge on `20129`)
+  - data model: SQLite and runtime data under `/Users/patrickreuver/_workspace/04_docker/infra-stack/omniroute`
 - `clickhouse`
   - status: configured as a dedicated local compose project
   - purpose: ClickHouse analytics database used by Langfuse
   - dependencies: external `infra_net`, shared `traefik`, Infisical for runtime-injected secrets
   - secret model: wrapper image authenticates to local Infisical with Universal Auth and loads `/clickhouse` before starting the upstream ClickHouse entrypoint
+- `immich`
+  - status: active as an external compose project in `/Users/patrickreuver/_workspace/02_coding/immich-foto-library`
+  - purpose: local photo library and external library index for cloud/photo sources
+  - route: `http://immich.localhost` via shared Traefik on `infra_net`
+  - dependencies: dedicated Immich Postgres, dedicated Valkey/Redis, Immich ML, host rclone/macFUSE mounts under `/Users/patrickreuver/_workspace/07_mounts`
+  - secret model: Infisical project `immich`, environment `dev`, path `/immich`; non-secret runtime config in `config/immich.config.yaml`
+  - note: scans are intentionally user-controlled and not part of mount/auth setup
 |- `honcho` / `second_brain`
   - status: configured as a separate compose project in `second_brain/infra/docker-compose.honcho.yml`
   - purpose: AI-native cross-session memory layer with dialectic reasoning, peer modeling, and conclusion derivation

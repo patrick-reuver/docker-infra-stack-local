@@ -364,6 +364,7 @@ docker-infra-stack/
 │   │   └── infisical-mcp/            # MCP bridge for Codex/agents
 │   ├── langfuse/                     # LLM observability
 │   ├── litellm/                      # LLM gateway (in development)
+│   ├── omniroute/                    # Local AI gateway
 │   └── presidio/                     # PII detection & anonymization
 │
 ├── docs/
@@ -389,6 +390,7 @@ docker-infra-stack/
 | MinIO | 9000 / 9001 | `minio.localhost` / `s3.localhost` | ✅ aktiv | S3-kompatibler Object Storage |
 | Infisical | 8080 | `infisical.localhost` | ✅ aktiv | Secret Management UI + API |
 | Langfuse | 3000 | `langfuse.localhost` | ✅ aktiv | LLM Observability, Tracing |
+| OmniRoute | 20128 / 20129 | `omniroute.localhost` | ✅ aktiv | Local AI Gateway + Dashboard |
 | ClickHouse | 8123 | `clickhouse.localhost` | ✅ aktiv | Analytics DB für Langfuse |
 | Presidio Analyzer | 3000 | `presidio.localhost` | ✅ aktiv | PII Detection API |
 | Presidio Anonymizer | 3000 | `presidio-anonymizer.localhost` | ✅ aktiv | Anonymization API |
@@ -452,6 +454,7 @@ Alle Dienste nutzen das externe Docker-Netzwerk `infra_net` (wird automatisch vo
 | `infisical` | 8080 |
 | `clickhouse` | 8123 |
 | `langfuse-web` | 3000 |
+| `infra-omniroute` | 20128 / 20129 |
 | `presidio-analyzer` | 3000 |
 | `presidio-anonymizer` | 3000 |
 
