@@ -1,0 +1,26 @@
+# ─────────────────────────────────────────────────────────────────────
+# Rclone Immich — Host-Mount Setup (macFUSE)
+# ─────────────────────────────────────────────────────────────────────
+# Rclone läuft auf dem HOST via macFUSE, nicht im Docker-Container.
+# Grund: Docker for Mac unterstützt keine FUSE-Propagation zwischen
+# Containern. Der Host-Mount wird per Bind-Volume in immich-server
+# eingehängt.
+#
+# mount  → start-mount.sh    (einmalig ausführen)
+# umount → stop-mount.sh
+#
+# Autostart: local.rclone-immich-dropbox.plist nach ~/Library/LaunchAgents/
+# ─────────────────────────────────────────────────────────────────────
+
+name: infra-rclone
+
+services:
+  # Keine Rclone-Container für Immich-Mounts.
+  # Rclone läuft auf dem Host (macFUSE erforderlich):
+  #   brew install --cask macfuse
+  #   ./start-mount.sh
+
+networks:
+  infra_net:
+    name: infra_net
+    external: true

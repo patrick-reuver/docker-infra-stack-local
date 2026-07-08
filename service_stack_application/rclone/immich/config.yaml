@@ -1,0 +1,30 @@
+# Rclone Immich Mounts — Non-Secret Config
+# Secrets (Tokens, Keys) → Infisical /immich
+# --------------------------------------------------------------------
+# Dieser YAML wird NUR für non-secret Konfiguration verwendet.
+# Token, Credentials und Keys gehören in Infisical.
+
+immich:
+  mounts:
+    dropbox:
+      remote: Dropbox
+      mount_path: /mnt/immich/dropbox
+      source: "dropbox:"
+      read_only: true
+      vfs_cache_mode: writes
+      log_level: INFO
+
+    local-test:
+      remote: local-test
+      mount_path: /mnt/immich/local-test
+      source: "/data"
+      read_only: true
+      vfs_cache_mode: writes
+      log_level: INFO
+
+  # Exclude-Muster für Immich External Libraries (später)
+  # excludes:
+  #   - .DS_Store
+  #   - Thumbs.db
+  #   - .Trashes
+  #   - Icon

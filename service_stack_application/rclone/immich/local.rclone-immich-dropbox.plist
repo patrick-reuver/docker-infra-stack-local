@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>local.rclone-immich-dropbox</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/patrickreuver/_workspace/02_coding/docker-infra-stack/service_stack_application/rclone/immich/start-mount.sh</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <false/>
+    <key>StandardOutPath</key>
+    <string>/tmp/rclone-immich-dropbox-launchd.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/rclone-immich-dropbox-launchd.log</string>
+</dict>
+</plist>
