@@ -88,3 +88,36 @@ docker-compose.override.yml
 # OS
 ehthumbs.db
 Desktop.ini
+
+# direnv
+.envrc
+
+# Terraform
+*.tfvars
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Kubernetes
+*.kubeconfig
+kubeconfig.yaml
+
+# Docker secrets
+docker-secrets/
+*.secret
+
+# Age / SOPS
+*.agekey
+*.sops.yaml
+
+# Backup exports
+backups/
+exports/
+
+# Infisical exports
+infisical-export*.json
+
+# Immich (separate project, not part of stack repo)
+immich-foto-library/
+/immich-foto-library/
+**/immich-foto-library/
